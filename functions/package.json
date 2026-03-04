@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "node --test lib/test/*.test.js",
-    "check": "npm run build && npm run test"
+    "check": "npm run build && npm run test",
+    "test:runtime": "node --test test/domain.runtime.test.js"
   },
   "dependencies": {
     "firebase-admin": "^12.7.0",

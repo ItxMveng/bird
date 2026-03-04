@@ -1,16 +1,39 @@
-# Bird - Plateforme d'enchères sécurisées (Cameroun)
+# Bird — Plateforme d'enchères sécurisées (Cameroun)
 
-Implémentation initiale du socle V1 pour une application mobile d'enchères sécurisées avec wallet interne, escrow et gestion des litiges.
+Backend V1 orienté Firebase pour une application mobile d'enchères avec wallet interne, escrow et litiges.
+
+## Ce qui est implémenté
+
+- Spécifications et architecture produit/technique dans `docs/`.
+- Règles Firestore de base avec contraintes de sécurité.
+- Index Firestore pour requêtes clés.
+- Cloud Functions TypeScript :
+  - `publishAuction`
+  - `placeBid`
+  - `closeExpiredAuctions` (scheduler)
+  - `confirmSecretCode`
+  - `openDispute`
+  - `resolveDispute`
+  - `paymentWebhook` (HTTP)
+- Moteur domaine (validations bid/durée, commission, contrôle litige/role).
 
 ## Structure
 
-- `docs/`: spécifications métier, architecture, roadmap.
-- `firebase/`: règles Firestore et indexes.
-- `functions/`: Cloud Functions TypeScript (squelette opérationnel orienté domaine).
+- `docs/` : specs métier, architecture, ops, roadmap.
+- `firebase/` : règles et indexes Firestore.
+- `functions/` : code Cloud Functions + tests unitaires domaine.
 
-## Prochaines étapes
+## Lancer en local (quand accès npm disponible)
 
-1. Brancher Firebase project (`dev/staging/prod`).
-2. Connecter Expo mobile + panel admin.
-3. Intégrer passerelle de paiement (CinetPay/Dohone) via webhook sécurisé.
-4. Ajouter tests d'intégration avec Firebase Emulator Suite.
+```bash
+cd functions
+npm install
+npm run check
+```
+
+## Étapes suivantes
+
+1. Brancher Firebase Emulator Suite pour tests d'intégration.
+2. Connecter l'application Expo et le panel admin.
+3. Sécuriser la signature webhook passerelle de paiement.
+4. Ajouter observabilité (alerting fraude + métriques SLA litige).

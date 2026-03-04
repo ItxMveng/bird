@@ -9,17 +9,23 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == uid;
     }
 
+    function hasOnlyKeys(data, keys) {
+      return data.keys().hasOnly(keys);
+    }
+
     match /users/{uid} {
       allow read: if isOwner(uid);
-      allow create: if isOwner(uid);
+      allow create: if isOwner(uid) && hasOnlyKeys(request.resource.data, ['uid', 'phone', 'role', 'isPro', 'status', 'createdAt']);
       allow update: if isOwner(uid)
-        && !request.resource.data.diff(resource.data).changedKeys().hasAny(['role', 'status']);
+        && !request.resource.data.diff(resource.data).changedKeys().hasAny(['role', 'status', 'isPro']);
       allow delete: if false;
     }
 
     match /profiles/{uid} {
       allow read: if true;
-      allow write: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.uid == request.auth.uid;
+      allow delete: if false;
     }
 
     match /wallets/{uid} {
@@ -28,19 +34,24 @@ service cloud.firestore {
     }
 
     match /wallet_transactions/{txId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && resource.data.walletId == request.auth.uid;
       allow write: if false;
     }
 
     match /auctions/{auctionId} {
       allow read: if true;
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && resource.data.sellerId == request.auth.uid;
+      allow create: if isAuthenticated()
+        && request.resource.data.sellerId == request.auth.uid
+        && request.resource.data.status == 'active';
+      allow update: if isAuthenticated()
+        && resource.data.sellerId == request.auth.uid
+        && !request.resource.data.diff(resource.data).changedKeys().hasAny(['winnerBidId', 'winnerId', 'currentPrice']);
+      allow delete: if false;
     }
 
     match /bids/{bidId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.bidderId == request.auth.uid;
       allow update, delete: if false;
     }
 
