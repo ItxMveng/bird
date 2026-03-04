@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import * as admin from 'firebase-admin';
 import { onCall, onRequest, HttpsError } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { setGlobalOptions } from 'firebase-functions/v2/options';
 import {
   assertAllowedDuration,
   assertBid,
@@ -13,6 +14,8 @@ import {
 
 admin.initializeApp();
 const db = admin.firestore();
+
+setGlobalOptions({ region: 'us-central1', maxInstances: 10 });
 
 const CONFIG = {
   commissionBps: 500,
