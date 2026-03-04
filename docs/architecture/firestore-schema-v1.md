@@ -84,6 +84,12 @@
 - `traceId: string`
 - `createdAt: timestamp`
 
+
+### `idempotency/{key}`
+- `scope: string`
+- `key: string`
+- `createdAt: timestamp`
+
 ## Champs server-only
 
-`wallets.balance`, `wallets.blocked`, `transactions.status`, `transactions.secretCodeHash`, `auctions.winnerBidId`, `wallet_transactions.*`.
+`wallets.balance`, `wallets.blocked`, `transactions.status`, `transactions.secretCodeHash`, `auctions.winnerBidId`, `wallet_transactions.*`, `idempotency.*`.

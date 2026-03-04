@@ -33,6 +33,11 @@ function assertCanResolveDispute(role) {
   if (role !== 'admin') throw new DomainError('ERR_FORBIDDEN_ROLE', 'Action réservée aux admins');
 }
 
+function assertCanMarkDelivered(actorId, sellerId, status) {
+  if (actorId !== sellerId) throw new DomainError('ERR_FORBIDDEN_ROLE', 'Seul le vendeur peut marquer livré');
+  if (status !== 'blocked') throw new DomainError('ERR_TRANSACTION_NOT_BLOCKED', 'Livraison possible seulement en blocked');
+}
+
 module.exports = {
   DomainError,
   assertAllowedDuration,
@@ -40,4 +45,5 @@ module.exports = {
   computeCommission,
   canOpenDispute,
   assertCanResolveDispute,
+  assertCanMarkDelivered,
 };

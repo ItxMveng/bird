@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   assertAllowedDuration,
   assertBid,
+  assertCanMarkDelivered,
   assertCanResolveDispute,
   canOpenDispute,
   computeCommission,
@@ -68,4 +69,10 @@ test('canOpenDispute autorise blocked/delivered uniquement', () => {
 test('assertCanResolveDispute réservé admin', () => {
   assert.doesNotThrow(() => assertCanResolveDispute('admin'));
   assert.throws(() => assertCanResolveDispute('user'));
+});
+
+test('assertCanMarkDelivered autorise uniquement vendeur en statut blocked', () => {
+  assert.doesNotThrow(() => assertCanMarkDelivered('seller-a', 'seller-a', 'blocked'));
+  assert.throws(() => assertCanMarkDelivered('buyer-b', 'seller-a', 'blocked'));
+  assert.throws(() => assertCanMarkDelivered('seller-a', 'seller-a', 'delivered'));
 });

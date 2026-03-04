@@ -7,6 +7,7 @@ const {
   computeCommission,
   canOpenDispute,
   assertCanResolveDispute,
+  assertCanMarkDelivered,
 } = require('../src/domain.runtime');
 
 test('allowed durations', () => {
@@ -47,4 +48,10 @@ test('commission and dispute guards', () => {
   assert.equal(canOpenDispute('confirmed'), false);
   assert.doesNotThrow(() => assertCanResolveDispute('admin'));
   assert.throws(() => assertCanResolveDispute('user'));
+});
+
+test('mark delivered guards', () => {
+  assert.doesNotThrow(() => assertCanMarkDelivered('seller-1', 'seller-1', 'blocked'));
+  assert.throws(() => assertCanMarkDelivered('buyer-1', 'seller-1', 'blocked'));
+  assert.throws(() => assertCanMarkDelivered('seller-1', 'seller-1', 'delivered'));
 });

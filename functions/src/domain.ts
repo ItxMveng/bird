@@ -12,7 +12,8 @@ export type DomainErrorCode =
   | 'ERR_TRANSACTION_NOT_BLOCKED'
   | 'ERR_INVALID_SECRET_CODE'
   | 'ERR_DISPUTE_NOT_ALLOWED'
-  | 'ERR_FORBIDDEN_ROLE';
+  | 'ERR_FORBIDDEN_ROLE'
+  | 'ERR_DUPLICATE_IDEMPOTENCY_KEY';
 
 export class DomainError extends Error {
   constructor(public readonly code: DomainErrorCode, message: string) {
@@ -70,5 +71,14 @@ export function canOpenDispute(status: TransactionStatus): boolean {
 export function assertCanResolveDispute(actorRole: string): void {
   if (actorRole !== 'admin') {
     throw new DomainError('ERR_FORBIDDEN_ROLE', 'Action réservée aux administrateurs');
+  }
+}
+
+export function assertCanMarkDelivered(actorId: string, sellerId: string, status: TransactionStatus): void {
+  if (actorId !== sellerId) {
+    throw new DomainError('ERR_FORBIDDEN_ROLE', 'Seul le vendeur peut marquer livré');
+  }
+  if (status !== 'blocked') {
+    throw new DomainError('ERR_TRANSACTION_NOT_BLOCKED', 'Livraison possible seulement en statut blocked');
   }
 }
