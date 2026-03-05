@@ -22,6 +22,7 @@ Backend V1 orienté Firebase pour une application mobile d'enchères avec wallet
 - `docs/` : specs métier, architecture, ops, roadmap.
 - `firebase/` : règles et indexes Firestore.
 - `functions/` : code Cloud Functions + tests unitaires domaine.
+- `mobile/` : application Expo (phase frontend V1).
 
 ## Lancer en local (quand accès npm disponible)
 
@@ -43,3 +44,12 @@ Le script `scripts/firebase-deploy.sh` permet de déployer rules/indexes/functio
 2. Connecter l'application Expo et le panel admin.
 3. Sécuriser la signature webhook passerelle de paiement.
 4. Ajouter observabilité (alerting fraude + métriques SLA litige).
+
+
+## Lancer le frontend mobile
+
+```bash
+cd mobile
+npm install
+npm run start
+```
