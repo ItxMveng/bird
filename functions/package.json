@@ -1,0 +1,20 @@
+{
+  "name": "bird-functions",
+  "version": "0.1.0",
+  "private": true,
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test lib/test/*.test.js",
+    "check": "npm run build && npm run test",
+    "test:runtime": "node --test test/domain.runtime.test.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^5.1.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "@types/node": "^22.10.1"
+  }
+}
