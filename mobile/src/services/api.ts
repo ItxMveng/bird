@@ -1,0 +1,128 @@
+import { AppNotification, Auction, Dispute, Message, MessageThread, Rating, Transaction, Wallet } from '../types';
+import { auth } from './firebase';
+
+const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://us-central1-bird-af69c.cloudfunctions.net';
+
+async function post<T>(fn: string, data: Record<string, unknown>): Promise<T> {
+  const token = await auth.currentUser?.getIdToken?.();
+  const response = await fetch(`${BASE_URL}/${fn}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ data }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+export const api = {
+  async publishAuction(payload: {
+    title: string;
+    description: string;
+    category: Auction['category'];
+    startPrice: number;
+    city: string;
+    durationHours: 6 | 12 | 24 | 48;
+  }) {
+    return post<{ result: { ok: boolean; auctionId?: string } }>('publishAuction', payload);
+  },
+
+  async placeBid(payload: { auctionId: string; amount: number; idempotencyKey: string }) {
+    return post<{ result: { ok: boolean; duplicate?: boolean } }>('placeBid', payload);
+  },
+
+  async markDelivered(payload: { transactionId: string }) {
+    return post<{ result: { ok: boolean } }>('markDelivered', payload);
+  },
+
+  async confirmSecretCode(payload: { transactionId: string; secretCode: string; idempotencyKey: string }) {
+    return post<{ result: { ok: boolean; duplicate?: boolean } }>('confirmSecretCode', payload);
+  },
+
+  async openDispute(payload: { transactionId: string; reason: string }) {
+    return post<{ result: { ok: boolean } }>('openDispute', payload);
+  },
+
+  async resolveDispute(payload: { disputeId: string; resolution: 'refund' | 'pay_seller' }) {
+    return post<{ result: { ok: boolean } }>('resolveDispute', payload);
+  },
+};
+
+export const mockData = {
+  auctions: [
+    {
+      id: 'auc-1',
+      title: 'iPhone 13 Pro 128GB',
+      description: 'Très bon état, batterie 88%, vendu avec chargeur.',
+      category: 'phones',
+      city: 'Douala',
+      currentPrice: 290000,
+      endAt: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
+      sellerId: 'seller-1',
+    },
+    {
+      id: 'auc-2',
+      title: 'PC Gamer RTX 3060',
+      description: '16GB RAM, SSD 1To, état neuf.',
+      category: 'electronics',
+      city: 'Yaoundé',
+      currentPrice: 500000,
+      endAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
+      sellerId: 'seller-2',
+    },
+    {
+      id: 'auc-3',
+      title: 'Moto Haojue 150',
+      description: 'Très propre, papiers à jour.',
+      category: 'moto',
+      city: 'Bafoussam',
+      currentPrice: 620000,
+      endAt: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+      sellerId: 'seller-3',
+    },
+  ] as Auction[],
+  wallet: {
+    balance: 150000,
+    blocked: 20000,
+    currency: 'XAF',
+  } as Wallet,
+  transactions: [
+    {
+      id: 'tx-1',
+      auctionId: 'auc-1',
+      amount: 290000,
+      status: 'blocked',
+      buyerId: 'user-demo',
+      sellerId: 'seller-1',
+    },
+  ] as Transaction[],
+  notifications: [
+    {
+      id: 'n-1',
+      title: 'Nouvelle enchère dépassée',
+      body: 'Votre enchère sur iPhone 13 a été dépassée.',
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'n-2',
+      title: 'Transaction prête',
+      body: 'Saisissez le code secret pour finaliser.',
+      createdAt: new Date().toISOString(),
+    },
+  ] as AppNotification[],
+  threads: [
+    { id: 'th-1', withUser: 'seller-1', lastMessage: 'On se voit à Akwa demain', updatedAt: new Date().toISOString() },
+  ] as MessageThread[],
+  messages: [
+    { id: 'm-1', threadId: 'th-1', senderId: 'user-demo', text: 'Bonsoir, article dispo ?', createdAt: new Date().toISOString() },
+    { id: 'm-2', threadId: 'th-1', senderId: 'seller-1', text: 'Oui, dispo.', createdAt: new Date().toISOString() },
+  ] as Message[],
+  ratings: [] as Rating[],
+  disputes: [{ id: 'd-1', transactionId: 'tx-1', reason: 'Produit non conforme', status: 'open' }] as Dispute[],
+};
