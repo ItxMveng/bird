@@ -9,18 +9,36 @@ export function HomeScreen({
   onOpenWallet,
   onOpenCreateAuction,
   onOpenTransactions,
+  onOpenSearch,
+  onOpenMessages,
+  onOpenNotifications,
+  onOpenRatings,
+  onOpenPro,
+  onOpenAdmin,
 }: {
   onOpenAuction: (auction: Auction) => void;
   onOpenWallet: () => void;
   onOpenCreateAuction: () => void;
   onOpenTransactions: () => void;
+  onOpenSearch: () => void;
+  onOpenMessages: () => void;
+  onOpenNotifications: () => void;
+  onOpenRatings: () => void;
+  onOpenPro: () => void;
+  onOpenAdmin: () => void;
 }) {
   return (
     <ScreenLayout title="Enchères actives">
-      <View style={styles.row}>
+      <View style={styles.rowWrap}>
         <Button title="Wallet" onPress={onOpenWallet} />
         <Button title="Créer" onPress={onOpenCreateAuction} />
         <Button title="Transactions" onPress={onOpenTransactions} />
+        <Button title="Recherche" onPress={onOpenSearch} />
+        <Button title="Messages" onPress={onOpenMessages} />
+        <Button title="Notif" onPress={onOpenNotifications} />
+        <Button title="Notes" onPress={onOpenRatings} />
+        <Button title="PRO" onPress={onOpenPro} />
+        <Button title="Admin" onPress={onOpenAdmin} />
       </View>
       {mockData.auctions.map((auction) => (
         <Pressable key={auction.id} style={styles.card} onPress={() => onOpenAuction(auction)}>
@@ -35,7 +53,7 @@ export function HomeScreen({
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
+  rowWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   card: { backgroundColor: 'white', borderRadius: 12, padding: 14, gap: 6 },
   title: { fontWeight: '700', fontSize: 16 },
   price: { fontWeight: '700', color: '#065f46' },

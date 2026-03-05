@@ -1,4 +1,4 @@
-import { Auction, Transaction, Wallet } from '../types';
+import { AppNotification, Auction, Dispute, Message, MessageThread, Rating, Transaction, Wallet } from '../types';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://us-central1-bird-af69c.cloudfunctions.net';
 
@@ -43,6 +43,10 @@ export const api = {
   async openDispute(payload: { transactionId: string; reason: string }) {
     return post<{ result: { ok: boolean } }>('openDispute', payload);
   },
+
+  async resolveDispute(payload: { disputeId: string; resolution: 'refund' | 'pay_seller' }) {
+    return post<{ result: { ok: boolean } }>('resolveDispute', payload);
+  },
 };
 
 export const mockData = {
@@ -67,6 +71,16 @@ export const mockData = {
       endAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
       sellerId: 'seller-2',
     },
+    {
+      id: 'auc-3',
+      title: 'Moto Haojue 150',
+      description: 'Très propre, papiers à jour.',
+      category: 'moto',
+      city: 'Bafoussam',
+      currentPrice: 620000,
+      endAt: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
+      sellerId: 'seller-3',
+    },
   ] as Auction[],
   wallet: {
     balance: 150000,
@@ -83,4 +97,29 @@ export const mockData = {
       sellerId: 'seller-1',
     },
   ] as Transaction[],
+  notifications: [
+    {
+      id: 'n-1',
+      title: 'Nouvelle enchère dépassée',
+      body: 'Votre enchère sur iPhone 13 a été dépassée.',
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 'n-2',
+      title: 'Transaction prête',
+      body: 'Saisissez le code secret pour finaliser.',
+      createdAt: new Date().toISOString(),
+    },
+  ] as AppNotification[],
+  threads: [
+    { id: 'th-1', withUser: 'seller-1', lastMessage: 'On se voit à Akwa demain', updatedAt: new Date().toISOString() },
+  ] as MessageThread[],
+  messages: [
+    { id: 'm-1', threadId: 'th-1', senderId: 'user-demo', text: 'Bonsoir, article dispo ?', createdAt: new Date().toISOString() },
+    { id: 'm-2', threadId: 'th-1', senderId: 'seller-1', text: 'Oui, dispo.', createdAt: new Date().toISOString() },
+  ] as Message[],
+  ratings: [] as Rating[],
+  disputes: [
+    { id: 'd-1', transactionId: 'tx-1', reason: 'Produit non conforme', status: 'open' },
+  ] as Dispute[],
 };
