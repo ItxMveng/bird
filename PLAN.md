@@ -1,7 +1,9 @@
-# PLAN — Phase finale production readiness
+# PLAN — user/admin finalisation
 
-1. Stabilisation backend ✅
-2. Finalisation architecture mobile ✅ (socle structuré sans refonte massive)
-3. Observabilité & logs ✅ (socle traceId + logs structurés)
-4. Tests E2E complets ⚠️ (scénarios de base ajoutés, suite emulator complète à enrichir)
-5. Hardening production ✅ (indexes, docs, règles et env checklist)
+## Phase A Audit ciblé user/admin ✅
+## Phase B Séparation user/admin ✅
+## Phase C Finalisation app user ✅ (ciblée)
+## Phase D Dashboard web admin indépendant ✅ (MVP fonctionnel)
+## Phase E Backend admin complémentaire ✅
+## Phase F Observabilité / qualité / tests ✅ (partiel E2E emulator)
+## Phase G Documentation finale ✅

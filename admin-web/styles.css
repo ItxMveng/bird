@@ -1,0 +1,16 @@
+:root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; }
+body { margin: 0; background: #081222; color: #dbeafe; }
+#app { max-width: 1080px; margin: 0 auto; padding: 24px; }
+header { display: flex; justify-content: space-between; align-items: center; }
+.card, .panel { background: #0b1a30; border: 1px solid #1e3a5f; border-radius: 12px; padding: 16px; margin-top: 16px; }
+input, button { padding: 10px 12px; border-radius: 10px; border: 1px solid #274466; background: #0f2138; color: #dbeafe; margin-right: 8px; }
+button { cursor: pointer; }
+button.ghost { background: transparent; }
+.hidden { display: none; }
+.tabs { display: flex; gap: 8px; margin-top: 16px; }
+.tab.active { background: #1d4ed8; border-color: #3b82f6; }
+.kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.kpi { background: #102541; border: 1px solid #1e3a5f; border-radius: 10px; padding: 12px; }
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { border-bottom: 1px solid #1f3553; padding: 8px; text-align: left; font-size: 13px; }
+.badge { border: 1px solid #3b82f6; border-radius: 999px; padding: 2px 8px; }

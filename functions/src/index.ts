@@ -106,6 +106,13 @@ async function getUserRole(uid: string): Promise<UserRole> {
   return (userDoc.data()?.role ?? 'user') as UserRole;
 }
 
+async function ensureAdmin(uid: string): Promise<void> {
+  const role = await getUserRole(uid);
+  if (role !== 'admin') {
+    throw new HttpsError('permission-denied', 'Accès administrateur requis');
+  }
+}
+
 function idempotencyRef(scope: string, key: string) {
   const safe = key.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 120);
   return db.collection('idempotency').doc(`${scope}_${safe}`);
@@ -686,4 +693,65 @@ export const getTransactionSecretCode = onCall(async (request) => {
     secretCode: secretData.secretCode,
     expiresAt: secretData.expiresAt.toDate().toISOString(),
   };
+});
+
+export const adminOverview = onCall(async (request) => {
+  const uid = await ensureAuthenticated(request.auth?.uid);
+  await ensureAdmin(uid);
+
+  const [activeAuctions, openDisputes, blockedTransactions, recentWalletTx] = await Promise.all([
+    db.collection('auctions').where('status', '==', 'active').count().get(),
+    db.collection('disputes').where('status', '==', 'open').count().get(),
+    db.collection('transactions').where('status', 'in', ['blocked', 'delivered', 'dispute']).count().get(),
+    db.collection('wallet_transactions').orderBy('createdAt', 'desc').limit(10).get(),
+  ]);
+
+  return {
+    ok: true,
+    kpis: {
+      activeAuctions: activeAuctions.data().count,
+      openDisputes: openDisputes.data().count,
+      inFlightTransactions: blockedTransactions.data().count,
+    },
+    recentWalletTransactions: recentWalletTx.docs.map((d) => ({ id: d.id, ...d.data() })),
+  };
+});
+
+export const adminListDisputes = onCall(async (request) => {
+  const uid = await ensureAuthenticated(request.auth?.uid);
+  await ensureAdmin(uid);
+  const limit = Math.min(Number(request.data?.limit ?? 50), 100);
+  const snapshot = await db.collection('disputes').orderBy('createdAt', 'desc').limit(limit).get();
+  return { ok: true, disputes: snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) };
+});
+
+export const adminListAuctions = onCall(async (request) => {
+  const uid = await ensureAuthenticated(request.auth?.uid);
+  await ensureAdmin(uid);
+  const limit = Math.min(Number(request.data?.limit ?? 50), 100);
+  const snapshot = await db.collection('auctions').orderBy('createdAt', 'desc').limit(limit).get();
+  return { ok: true, auctions: snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) };
+});
+
+export const adminListUsers = onCall(async (request) => {
+  const uid = await ensureAuthenticated(request.auth?.uid);
+  await ensureAdmin(uid);
+  const limit = Math.min(Number(request.data?.limit ?? 50), 100);
+  const snapshot = await db.collection('users').orderBy('createdAt', 'desc').limit(limit).get();
+  return { ok: true, users: snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) };
+});
+
+export const adminSetUserStatus = onCall(async (request) => {
+  const uid = await ensureAuthenticated(request.auth?.uid);
+  await ensureAdmin(uid);
+  const { targetUid, status } = request.data as { targetUid: string; status: 'active' | 'suspended' };
+  if (!targetUid || (status !== 'active' && status !== 'suspended')) {
+    throw new HttpsError('invalid-argument', 'Paramètres invalides');
+  }
+  await db.collection('users').doc(targetUid).set({
+    status,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true });
+  logEvent('info', 'admin_user_status_updated', { adminUid: uid, targetUid, status, traceId: crypto.randomUUID() });
+  return { ok: true };
 });

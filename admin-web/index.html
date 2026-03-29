@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bird Admin Dashboard</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <h1>Bird Admin</h1>
+        <button id="logoutBtn" class="ghost">Déconnexion</button>
+      </header>
+
+      <section id="authCard" class="card">
+        <h2>Connexion admin</h2>
+        <input id="email" placeholder="admin@email.com" type="email" />
+        <input id="password" placeholder="Mot de passe" type="password" />
+        <button id="loginBtn">Se connecter</button>
+        <p id="authFeedback"></p>
+      </section>
+
+      <section id="dashboard" class="hidden">
+        <div class="tabs">
+          <button data-tab="overview" class="tab active">Overview</button>
+          <button data-tab="disputes" class="tab">Litiges</button>
+          <button data-tab="auctions" class="tab">Enchères</button>
+          <button data-tab="users" class="tab">Utilisateurs</button>
+        </div>
+
+        <div id="overview" class="panel"></div>
+        <div id="disputes" class="panel hidden"></div>
+        <div id="auctions" class="panel hidden"></div>
+        <div id="users" class="panel hidden"></div>
+      </section>
+    </div>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

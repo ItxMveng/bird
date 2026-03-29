@@ -14,8 +14,7 @@ export type Route =
   | 'notifications'
   | 'messages'
   | 'conversation'
-  | 'ratings'
-  | 'admin';
+  | 'ratings';
 
 export function useAppRouter() {
   const [route, setRoute] = useState<Route>('home');

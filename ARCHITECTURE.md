@@ -1,33 +1,34 @@
-# ARCHITECTURE — état réel (2026-03-29)
+# ARCHITECTURE — finalisation user/admin (2026-03-29)
 
-## Backend (Cloud Functions)
-- `publishAuction`: publication enchère active.
-- `placeBid`: validation invariants + idempotency bid.
-- `closeExpiredAuctions`: clôture automatique + création transaction escrow + blocage wallet dans la même transaction Firestore.
-- `markDelivered`: transition `blocked -> delivered` (seller).
-- `confirmSecretCode`: validation hash + expiration + release seller.
-- Settlement seller (`confirm` / `pay_seller`) atomique sur wallets + statut transaction.
-- `openDispute` / `resolveDispute`: cycle litige sécurisé.
-- `paymentWebhook`: signature/timestamp/anti-replay/idempotence.
-- `topUpWallet`: recharge wallet idempotente callable.
-- `getTransactionSecretCode`: récupération code secret buyer-only.
+## 1) Backend unique partagé (Firebase Functions)
+- Le backend métier reste unique pour user + admin.
+- Cycle escrow conservé: `bid -> close -> block -> deliver -> confirm -> release`.
+- Opérations critiques/financières uniquement côté Functions.
 
-## Firestore
-- Client read-only sur `auctions`.
-- Client interdit en write sur `bids`, `auctions`, `transactions`, `wallets`, `disputes`, `transaction_secrets`.
-- `disputes` read: buyer/seller/admin uniquement.
-- `transaction_secrets` read: buyer uniquement.
+### Endpoints user principaux
+- `publishAuction`, `placeBid`, `markDelivered`, `confirmSecretCode`, `openDispute`, `topUpWallet`, `getTransactionSecretCode`.
 
-## Mobile
-- Les actions critiques passent via `mobile/src/services/api.ts` vers Cloud Functions.
-- Les listeners temps réel restent côté Firestore pour lecture/synchronisation.
-- Navigation structurée via `mobile/src/navigation/router.ts` (socle router interne sans dépendance externe).
+### Endpoints admin principaux
+- `resolveDispute` (existant, admin only)
+- `adminOverview`
+- `adminListDisputes`
+- `adminListAuctions`
+- `adminListUsers`
+- `adminSetUserStatus`
 
-## Invariants clés
-- Pas de blocage fonds au bid.
-- Blocage à la clôture uniquement.
-- Pas de mutation financière sensible côté client.
-- Idempotence sur bid/confirm/webhook/topup.
+## 2) Mobile USER app
+- Aucune surface admin exposée.
+- Navigation user structurée via `mobile/src/navigation/router.ts`.
+- Actions critiques via `mobile/src/services/api.ts` (pas de logique financière client).
+- Mock non prioritaire limité; chemin réel privilégié.
 
-## Tests
-- Domaine: unit tests + tests de flux (`functions/test/flow.test.ts`).
+## 3) Dashboard WEB ADMIN (indépendant)
+- Nouveau frontend séparé: `admin-web/`.
+- Auth admin Firebase obligatoire.
+- Vue KPI + listes litiges/enchères/users via endpoints admin backend.
+- Séparation stricte vis-à-vis de l’app mobile user.
+
+## 4) Firestore / RBAC
+- Écritures client interdites sur collections sensibles (`wallets`, `transactions`, `bids`, `auctions`, `disputes`, `transaction_secrets`).
+- Lecture disputes limitée aux parties concernées + admin.
+- Actions admin validées côté backend (`ensureAdmin`).

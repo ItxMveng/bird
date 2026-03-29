@@ -1,37 +1,30 @@
-# SECURITY — Bird (baseline Milestone 1)
+# SECURITY — Bird final
 
-## Surfaces critiques protégées
-- Cloud Functions critiques: `placeBid`, `closeExpiredAuctions`, `confirmSecretCode`, `openDispute`, `resolveDispute`, `paymentWebhook`.
-- Mutations financières (`wallets`, `transactions`, `wallet_transactions`, `idempotency`) sont server-only.
-- Mutations critiques enchères/bids sont backend-only (via Functions), pas via client Firestore.
-- `transaction_secrets` est lisible uniquement par l'acheteur concerné.
+## Principes non négociables
+- Aucune logique financière côté client.
+- Toute mutation critique passe par Cloud Functions.
+- Vérification stricte des rôles (admin/user) côté backend.
+- Séparation stricte app user vs dashboard admin.
 
-## Webhook paiement (durcissement M1)
-- Signature HMAC SHA-256 obligatoire sur payload brut (`x-bird-signature`).
-- Timestamp obligatoire (`x-bird-timestamp`) avec fenêtre de validité configurable (`PAYMENT_WEBHOOK_TOLERANCE_SEC`, défaut 300s).
-- Anti-replay basé sur empreinte `timestamp:signature` stockée en idempotency.
-- Requête invalide => rejet explicite (401/409/400), sans fuite d'information sensible.
-- Journaux structurés JSON avec `traceId` et `reason`.
+## Webhook paiement
+- Signature HMAC obligatoire (`PAYMENT_WEBHOOK_SECRET`).
+- Timestamp signé + fenêtre de tolérance (`PAYMENT_WEBHOOK_TOLERANCE_SEC`).
+- Anti-replay par idempotency signature.
+- Rejets explicites + logs structurés.
 
-## Principes d'autorisation
-- `resolveDispute` réservé au rôle admin (`users/{uid}.role == admin`).
-- `openDispute`/`confirmSecretCode` vérifient l'appartenance buyer/seller sur la transaction ciblée.
-- Les règles Firestore empêchent la lecture litige par des tiers non concernés.
-- Le code secret transaction est récupérable uniquement via Cloud Function authentifiée côté buyer.
-- `confirmSecretCode` exige un `idempotencyKey` et applique un settlement atomique (wallets + transaction status).
+## RBAC / accès
+- `resolveDispute` et endpoints `admin*` protégés par contrôle admin backend.
+- `transaction_secrets` lisible buyer-only.
+- Litiges visibles uniquement parties concernées + admin.
 
-## Règles de non-mutation côté client
-- `wallets`: lecture owner, écriture interdite client.
-- `transactions`: lecture parties concernées, écriture interdite client.
-- `auctions`: lecture publique, création/update client interdites.
-- `bids`: lecture authentifiée, création/update/delete client interdits.
-- `disputes`: création/update/delete client interdits; lecture limitée aux parties + admin.
-- `transaction_secrets`: lecture buyer uniquement, écriture client interdite.
+## Surfaces client verrouillées
+- App mobile user: pas de route admin, pas d’écran admin, pas d’actions admin.
+- Writes client interdits sur `wallets`, `transactions`, `bids`, `auctions`, `disputes`, `transaction_secrets`.
 
-## Variables d'environnement sécurité
-- `SECRET_CODE_SALT` (existant)
-- `PAYMENT_WEBHOOK_SECRET` (obligatoire en production)
-- `PAYMENT_WEBHOOK_TOLERANCE_SEC` (optionnel)
+## Observabilité
+- Logs JSON avec `traceId` sur bids, close/block escrow, confirmations, litiges, topups, webhooks, actions admin.
 
-## Journalisation
-- Logs JSON structurés avec `traceId` pour bids, clôture escrow, confirmation transaction, disputes, topup et webhook.
+## Variables d’environnement critiques
+- `SECRET_CODE_SALT`
+- `PAYMENT_WEBHOOK_SECRET`
+- `PAYMENT_WEBHOOK_TOLERANCE_SEC`

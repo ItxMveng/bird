@@ -50,7 +50,6 @@ type AppDataContextValue = {
   markDeliveredLocal: (transactionId: string) => Promise<void>;
   confirmTransactionLocal: (transactionId: string, secretCode: string) => Promise<void>;
   openDisputeLocal: (transactionId: string, reason: string) => Promise<Dispute>;
-  resolveDisputeLocal: (disputeId: string, resolution: 'refund' | 'pay_seller') => Promise<void>;
   markNotificationReadLocal: (notificationId: string) => Promise<void>;
   topUpWalletLocal: (amount: number) => Promise<void>;
   addMessageLocal: (threadId: string, senderId: string, text: string) => Promise<void>;
@@ -78,20 +77,20 @@ const toIsoString = (value: unknown, fallback = new Date().toISOString()) => {
 
 export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [auctions, setAuctions] = useState<Auction[]>(mockData.auctions);
-  const [bids, setBids] = useState<Bid[]>(mockData.bids);
+  const [auctions, setAuctions] = useState<Auction[]>(USE_MOCK ? mockData.auctions : []);
+  const [bids, setBids] = useState<Bid[]>(USE_MOCK ? mockData.bids : []);
   const [profiles, setProfiles] = useState<Record<string, PublicProfile>>(
-    Object.fromEntries(mockData.profiles.map((profile) => [profile.uid, profile])),
+    USE_MOCK ? Object.fromEntries(mockData.profiles.map((profile) => [profile.uid, profile])) : {},
   );
-  const [wallet, setWallet] = useState<Wallet>(mockData.wallet);
-  const [transactions, setTransactions] = useState<Transaction[]>(mockData.transactions);
+  const [wallet, setWallet] = useState<Wallet>(USE_MOCK ? mockData.wallet : { balance: 0, blocked: 0, currency: 'XAF' });
+  const [transactions, setTransactions] = useState<Transaction[]>(USE_MOCK ? mockData.transactions : []);
   const [notifications, setNotifications] = useState<AppNotification[]>(
-    mockData.notifications.map((n) => ({ ...n, read: false })),
+    USE_MOCK ? mockData.notifications.map((n) => ({ ...n, read: false })) : [],
   );
-  const [threads, setThreads] = useState<MessageThread[]>(mockData.threads);
-  const [messages, setMessages] = useState<Message[]>(mockData.messages);
-  const [disputes, setDisputes] = useState<Dispute[]>(mockData.disputes);
-  const [ratings, setRatings] = useState<Rating[]>(mockData.ratings);
+  const [threads, setThreads] = useState<MessageThread[]>(USE_MOCK ? mockData.threads : []);
+  const [messages, setMessages] = useState<Message[]>(USE_MOCK ? mockData.messages : []);
+  const [disputes, setDisputes] = useState<Dispute[]>(USE_MOCK ? mockData.disputes : []);
+  const [ratings, setRatings] = useState<Rating[]>(USE_MOCK ? mockData.ratings : []);
 
   useEffect(() => {
     if (!user?.uid || USE_MOCK) return;
@@ -392,33 +391,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
         await pushNotification('Litige ouvert', `Le litige ${created.id} a bien été enregistré.`);
         return created;
-      },
-      resolveDisputeLocal: async (disputeId, resolution) => {
-        const dispute = disputes.find((item) => item.id === disputeId);
-        if (!dispute) throw new Error('Litige introuvable.');
-        const tx = transactions.find((item) => item.id === dispute.transactionId);
-
-        setDisputes((prev) => prev.map((item) => (item.id === disputeId ? { ...item, status: 'resolved' } : item)));
-
-        if (tx) {
-          setTransactions((prev) => prev.map((item) => (item.id === tx.id ? { ...item, status: resolution === 'refund' ? 'refunded' : 'confirmed' } : item)));
-          setWallet((prev) => ({
-            ...prev,
-            blocked: Math.max(0, prev.blocked - tx.amount),
-            balance: resolution === 'refund' ? prev.balance + tx.amount : prev.balance,
-          }));
-        }
-
-        if (!USE_MOCK) {
-          await api.resolveDispute({ disputeId, resolution });
-        }
-
-        await pushNotification(
-          'Litige résolu',
-          resolution === 'refund'
-            ? `Le litige ${disputeId} a été remboursé.`
-            : `Le litige ${disputeId} a été validé en faveur du vendeur.`,
-        );
       },
       markNotificationReadLocal: async (notificationId) => {
         setNotifications((prev) => prev.map((item) => (item.id === notificationId ? { ...item, read: true } : item)));

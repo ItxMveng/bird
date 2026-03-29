@@ -4,7 +4,6 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { AppDataProvider } from './src/context/AppDataContext';
 import { palette } from './src/components/ui-kit';
 import { InteractiveSplash } from './src/components/InteractiveSplash';
-import { AdminDashboardScreen } from './src/screens/AdminDashboardScreen';
 import { AuctionDetailScreen } from './src/screens/AuctionDetailScreen';
 import { ConversationScreen } from './src/screens/ConversationScreen';
 import { CreateAuctionScreen } from './src/screens/CreateAuctionScreen';
@@ -94,7 +93,6 @@ function AppInner() {
       {route === 'messages' && <MessagesScreen onBack={() => go('home')} onOpenThread={(th) => openThread(th)} />}
       {route === 'conversation' && selectedThread && <ConversationScreen thread={selectedThread} onBack={() => go('messages')} />}
       {route === 'ratings' && <RatingsScreen onBack={() => go('home')} />}
-      {route === 'admin' && <AdminDashboardScreen onBack={() => go('home')} />}
 
       {showSidebarToggle ? (
         <View style={styles.sideControls}>
@@ -128,9 +126,6 @@ function AppInner() {
             </Pressable>
             <Pressable style={[styles.quickToolBtn, route === 'wallet' ? styles.quickToolBtnActive : undefined]} onPress={() => goTo('wallet')}>
               <Text style={styles.quickToolText}>Wallet</Text>
-            </Pressable>
-            <Pressable style={[styles.quickToolBtn, route === 'admin' ? styles.quickToolBtnActive : undefined]} onPress={() => goTo('admin')}>
-              <Text style={styles.quickToolText}>Admin</Text>
             </Pressable>
           </View>
         </ScrollView>
