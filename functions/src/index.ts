@@ -20,6 +20,8 @@ setGlobalOptions({ region: 'us-central1', maxInstances: 10 });
 const CONFIG = {
   commissionBps: 500,
   secretCodeSalt: process.env.SECRET_CODE_SALT ?? 'dev-salt',
+  webhookSecret: process.env.PAYMENT_WEBHOOK_SECRET ?? '',
+  webhookToleranceSec: Number(process.env.PAYMENT_WEBHOOK_TOLERANCE_SEC ?? '300'),
 };
 
 type UserRole = 'user' | 'admin';
@@ -56,8 +58,28 @@ type TransactionDoc = {
   deliveredAt?: admin.firestore.Timestamp;
 };
 
+type TransactionSecretDoc = {
+  transactionId: string;
+  buyerId: string;
+  secretCode: string;
+  expiresAt: admin.firestore.Timestamp;
+  createdAt: admin.firestore.FieldValue;
+};
+
 function hashSecretCode(secretCode: string): string {
   return crypto.createHash('sha256').update(`${CONFIG.secretCodeSalt}:${secretCode}`).digest('hex');
+}
+
+function hashWebhookPayload(timestamp: string, rawPayload: Buffer | string): string {
+  const payload = Buffer.isBuffer(rawPayload) ? rawPayload : Buffer.from(rawPayload);
+  return crypto.createHmac('sha256', CONFIG.webhookSecret).update(`${timestamp}.`).update(payload).digest('hex');
+}
+
+function safeEqualHex(expectedHex: string, candidateHex: string): boolean {
+  const expected = Buffer.from(expectedHex, 'hex');
+  const candidate = Buffer.from(candidateHex, 'hex');
+  if (expected.length === 0 || expected.length !== candidate.length) return false;
+  return crypto.timingSafeEqual(expected, candidate);
 }
 
 function randomSecretCode(): string {
@@ -280,23 +302,66 @@ export const closeExpiredAuctions = onSchedule('every 5 minutes', async () => {
       const auctionSnap = await tx.get(doc.ref);
       const fresh = auctionSnap.data() as AuctionDoc;
       if (fresh.status !== 'active') return;
+      if (!fresh.winnerId) return;
+
+      const buyerWalletRef = db.collection('wallets').doc(fresh.winnerId);
+      const buyerWalletSnap = await tx.get(buyerWalletRef);
+      const buyerWallet = buyerWalletSnap.data() as WalletDoc | undefined;
+
+      if (!buyerWallet || buyerWallet.balance < fresh.currentPrice) {
+        tx.update(doc.ref, {
+          status: 'closed_unsold',
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        return;
+      }
 
       tx.update(doc.ref, { status: 'closed_sold', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
       const transactionRef = db.collection('transactions').doc();
+      const secretCode = randomSecretCode();
+      const expiresAt = admin.firestore.Timestamp.fromMillis(Date.now() + 7 * 24 * 3600 * 1000);
       tx.set(transactionRef, {
         auctionId: doc.id,
         buyerId: fresh.winnerId,
         sellerId: fresh.sellerId,
         amount: fresh.currentPrice,
         status: 'blocked',
-        secretCodeHash: hashSecretCode(randomSecretCode()),
-        expiresAt: admin.firestore.Timestamp.fromMillis(Date.now() + 7 * 24 * 3600 * 1000),
+        secretCodeHash: hashSecretCode(secretCode),
+        expiresAt,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      } satisfies TransactionDoc);
-    });
+      });
 
-    await blockBuyerFunds({ buyerId: auction.winnerId, amount: auction.currentPrice, reference: doc.id, traceId });
+      tx.set(db.collection('transaction_secrets').doc(transactionRef.id), {
+        transactionId: transactionRef.id,
+        buyerId: fresh.winnerId,
+        secretCode,
+        expiresAt,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      } satisfies TransactionSecretDoc);
+
+      tx.set(
+        buyerWalletRef,
+        {
+          uid: fresh.winnerId,
+          balance: buyerWallet.balance - fresh.currentPrice,
+          blocked: (buyerWallet.blocked ?? 0) + fresh.currentPrice,
+          currency: 'XAF',
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+
+      tx.set(db.collection('wallet_transactions').doc(), {
+        walletId: fresh.winnerId,
+        type: 'block',
+        amount: fresh.currentPrice,
+        status: 'success',
+        reference: transactionRef.id,
+        traceId,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    });
   }
 });
 
@@ -340,6 +405,7 @@ export const confirmSecretCode = onCall(async (request) => {
 
     if (txData.buyerId !== uid && txData.sellerId !== uid) throw new HttpsError('permission-denied', 'Accès refusé');
     if (txData.status !== 'blocked' && txData.status !== 'delivered') throw new DomainError('ERR_TRANSACTION_NOT_BLOCKED', 'Transaction non confirmable');
+    if (txData.expiresAt.toMillis() < Date.now()) throw new DomainError('ERR_INVALID_SECRET_CODE', 'Code secret expiré');
     if (hashSecretCode(secretCode) !== txData.secretCodeHash) throw new DomainError('ERR_INVALID_SECRET_CODE', 'Code secret invalide');
 
     const traceId = crypto.randomUUID();
@@ -436,9 +502,75 @@ export const resolveDispute = onCall(async (request) => {
 });
 
 export const paymentWebhook = onRequest(async (request, response) => {
+  const traceId = crypto.randomUUID();
   try {
     if (request.method !== 'POST') {
       response.status(405).json({ ok: false, error: 'Method not allowed' });
+      return;
+    }
+
+    if (!CONFIG.webhookSecret) {
+      console.error(JSON.stringify({
+        level: 'error',
+        event: 'payment_webhook_rejected',
+        reason: 'missing_webhook_secret',
+        traceId,
+      }));
+      response.status(500).json({ ok: false, error: 'webhook_not_configured' });
+      return;
+    }
+
+    const timestampHeader = request.header('x-bird-timestamp') ?? '';
+    const signatureHeader = request.header('x-bird-signature') ?? '';
+    if (!timestampHeader || !signatureHeader) {
+      console.warn(JSON.stringify({
+        level: 'warn',
+        event: 'payment_webhook_rejected',
+        reason: 'missing_signature_or_timestamp',
+        traceId,
+      }));
+      response.status(401).json({ ok: false, error: 'invalid_signature' });
+      return;
+    }
+
+    const parsedTimestamp = Number.parseInt(timestampHeader, 10);
+    const nowSec = Math.floor(Date.now() / 1000);
+    const ageSec = Math.abs(nowSec - parsedTimestamp);
+    if (!Number.isFinite(parsedTimestamp) || ageSec > CONFIG.webhookToleranceSec) {
+      console.warn(JSON.stringify({
+        level: 'warn',
+        event: 'payment_webhook_rejected',
+        reason: 'expired_timestamp',
+        traceId,
+        ageSec,
+      }));
+      response.status(401).json({ ok: false, error: 'expired_request' });
+      return;
+    }
+
+    const rawPayload = request.rawBody ?? Buffer.from(JSON.stringify(request.body ?? {}));
+    const expectedSignature = hashWebhookPayload(timestampHeader, rawPayload);
+    if (!safeEqualHex(expectedSignature, signatureHeader)) {
+      console.warn(JSON.stringify({
+        level: 'warn',
+        event: 'payment_webhook_rejected',
+        reason: 'signature_mismatch',
+        traceId,
+      }));
+      response.status(401).json({ ok: false, error: 'invalid_signature' });
+      return;
+    }
+
+    const antiReplayKey = `${timestampHeader}:${signatureHeader}`;
+    const firstSignature = await ensureIdempotent('webhook_sig', antiReplayKey);
+    if (!firstSignature) {
+      console.warn(JSON.stringify({
+        level: 'warn',
+        event: 'payment_webhook_rejected',
+        reason: 'replay_detected',
+        traceId,
+      }));
+      response.status(409).json({ ok: false, error: 'replay_detected' });
       return;
     }
 
@@ -446,12 +578,23 @@ export const paymentWebhook = onRequest(async (request, response) => {
       uid: string; amount: number; providerReference: string; status: 'success' | 'failed';
     };
 
+    if (!uid || !providerReference || !Number.isFinite(amount) || amount <= 0 || (status !== 'success' && status !== 'failed')) {
+      console.warn(JSON.stringify({
+        level: 'warn',
+        event: 'payment_webhook_rejected',
+        reason: 'invalid_payload',
+        traceId,
+      }));
+      response.status(400).json({ ok: false, error: 'invalid_payload' });
+      return;
+    }
+
     if (status !== 'success') {
       response.status(200).json({ ok: true, skipped: true });
       return;
     }
 
-    const first = await ensureIdempotent(`webhook_${uid}`, providerReference);
+    const first = await ensureIdempotent('webhook_provider_ref', providerReference);
     if (!first) {
       response.status(200).json({ ok: true, duplicate: true });
       return;
@@ -470,9 +613,76 @@ export const paymentWebhook = onRequest(async (request, response) => {
       }, { merge: true });
     });
 
-    await createWalletTx({ walletId: uid, type: 'recharge', amount, status: 'success', reference: providerReference, traceId: crypto.randomUUID() });
+    await createWalletTx({ walletId: uid, type: 'recharge', amount, status: 'success', reference: providerReference, traceId });
+    console.info(JSON.stringify({
+      level: 'info',
+      event: 'payment_webhook_processed',
+      traceId,
+      uid,
+      providerReference,
+      amount,
+    }));
     response.status(200).json({ ok: true });
   } catch (error) {
-    response.status(500).json({ ok: false, error: 'internal_error', detail: (error as Error).message });
+    console.error(JSON.stringify({
+      level: 'error',
+      event: 'payment_webhook_error',
+      traceId,
+      message: (error as Error).message,
+    }));
+    response.status(500).json({ ok: false, error: 'internal_error' });
   }
+});
+
+export const topUpWallet = onCall(async (request) => {
+  try {
+    const uid = await ensureAuthenticated(request.auth?.uid);
+    const { amount, idempotencyKey } = request.data as { amount: number; idempotencyKey: string };
+    if (!idempotencyKey) throw new DomainError('ERR_DUPLICATE_IDEMPOTENCY_KEY', 'idempotencyKey requis');
+    if (!Number.isFinite(amount) || amount <= 0) throw new HttpsError('invalid-argument', 'Montant invalide');
+
+    const first = await ensureIdempotent(`topup_${uid}`, idempotencyKey);
+    if (!first) return { ok: true, duplicate: true };
+
+    const walletRef = db.collection('wallets').doc(uid);
+    const traceId = crypto.randomUUID();
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(walletRef);
+      const wallet = snap.data() as WalletDoc | undefined;
+      tx.set(walletRef, {
+        uid,
+        balance: (wallet?.balance ?? 0) + amount,
+        blocked: wallet?.blocked ?? 0,
+        currency: 'XAF',
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+    });
+    await createWalletTx({ walletId: uid, type: 'recharge', amount, status: 'success', reference: idempotencyKey, traceId });
+    return { ok: true };
+  } catch (error) {
+    asDomainError(error);
+  }
+});
+
+export const getTransactionSecretCode = onCall(async (request) => {
+  const uid = await ensureAuthenticated(request.auth?.uid);
+  const { transactionId } = request.data as { transactionId: string };
+  if (!transactionId) throw new HttpsError('invalid-argument', 'transactionId requis');
+
+  const txRef = db.collection('transactions').doc(transactionId);
+  const txSnap = await txRef.get();
+  if (!txSnap.exists) throw new HttpsError('not-found', 'Transaction introuvable');
+  const txData = txSnap.data() as TransactionDoc;
+  if (txData.buyerId !== uid) throw new HttpsError('permission-denied', 'Accès refusé');
+
+  const secretSnap = await db.collection('transaction_secrets').doc(transactionId).get();
+  if (!secretSnap.exists) throw new HttpsError('not-found', 'Code secret indisponible');
+  const secretData = secretSnap.data() as { secretCode: string; expiresAt: admin.firestore.Timestamp };
+  if (secretData.expiresAt.toMillis() < Date.now()) throw new HttpsError('failed-precondition', 'Code expiré');
+
+  return {
+    ok: true,
+    secretCode: secretData.secretCode,
+    expiresAt: secretData.expiresAt.toDate().toISOString(),
+  };
 });

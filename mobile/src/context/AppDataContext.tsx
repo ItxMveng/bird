@@ -3,7 +3,6 @@ import {
   addDoc,
   collection,
   doc,
-  increment,
   onSnapshot,
   orderBy,
   query,
@@ -12,6 +11,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore';
+import { api } from '../services/api';
 import { mockData } from '../services/api';
 import { db, USE_MOCK } from '../services/firebase';
 import { useAuth } from './AuthContext';
@@ -292,23 +292,19 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         };
 
         if (!USE_MOCK) {
-          const ref = await addDoc(collection(db, 'auctions'), {
-            sellerId,
+          const response = await api.publishAuction({
             title: created.title,
             description: created.description,
             category: created.category,
             city: created.city,
             imageUrl: created.imageUrl,
             startPrice,
-            currentPrice: startPrice,
-            status: 'active',
-            endAt: new Date(created.endAt),
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
+            durationHours: durationHours as 6 | 12 | 24 | 48,
           });
-
-          created.id = ref.id;
-          setAuctions((prev) => [created, ...prev.filter((item) => item.id !== ref.id)]);
+          if (response?.result?.auctionId) {
+            created.id = response.result.auctionId;
+          }
+          setAuctions((prev) => [created, ...prev.filter((item) => item.id !== created.id)]);
         } else {
           setAuctions((prev) => [created, ...prev]);
         }
@@ -333,50 +329,15 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           createdAt: new Date().toISOString(),
         };
 
-        setBids((prev) => [localBid, ...prev]);
-        setAuctions((prev) => prev.map((auction) => (auction.id === auctionId ? { ...auction, currentPrice: amount } : auction)));
-        setTransactions((prev) => {
-          const existing = prev.find((tx) => tx.id === txId || (tx.auctionId === auctionId && tx.buyerId === bidderId));
-          if (existing) {
-            return prev.map((tx) => (tx.id === existing.id ? { ...tx, amount, status: 'blocked' } : tx));
-          }
-          return [
-            {
-              id: txId,
-              auctionId,
-              amount,
-              status: 'blocked',
-              sellerId: target.sellerId,
-              buyerId: bidderId,
-            },
-            ...prev,
-          ];
-        });
-
         if (!USE_MOCK) {
-          await addDoc(collection(db, 'bids'), {
+          await api.placeBid({
             auctionId,
-            bidderId,
-            bidderName: localBid.bidderName,
             amount,
-            createdAt: serverTimestamp(),
+            idempotencyKey: `bid-${auctionId}-${bidderId}-${Date.now()}`,
           });
-          await updateDoc(doc(db, 'auctions', auctionId), {
-            currentPrice: amount,
-            updatedAt: serverTimestamp(),
-          });
-          await setDoc(
-            doc(db, 'transactions', txId),
-            {
-              auctionId,
-              amount,
-              status: 'blocked',
-              sellerId: target.sellerId,
-              buyerId: bidderId,
-              updatedAt: serverTimestamp(),
-            },
-            { merge: true },
-          );
+        } else {
+          setBids((prev) => [localBid, ...prev]);
+          setAuctions((prev) => prev.map((auction) => (auction.id === auctionId ? { ...auction, currentPrice: amount } : auction)));
         }
 
         await pushNotification('Enchère validée', `Vous menez sur "${target.title}" avec ${amount.toLocaleString()} XAF.`);
@@ -385,16 +346,10 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         const tx = transactions.find((item) => item.id === transactionId);
         if (!tx) throw new Error('Transaction introuvable.');
 
-        setTransactions((prev) =>
-          prev.map((item) => (item.id === transactionId ? { ...item, status: item.status === 'refunded' ? item.status : 'delivered' } : item)),
-        );
-
         if (!USE_MOCK) {
-          await updateDoc(doc(db, 'transactions', transactionId), {
-            status: 'delivered',
-            updatedAt: serverTimestamp(),
-          });
+          await api.markDelivered({ transactionId });
         }
+        setTransactions((prev) => prev.map((item) => (item.id === transactionId ? { ...item, status: 'delivered' } : item)));
 
         await pushNotification('Livraison signalée', `La transaction ${transactionId} est marquée livrée.`);
       },
@@ -406,15 +361,15 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         const tx = transactions.find((item) => item.id === transactionId);
         if (!tx) throw new Error('Transaction introuvable.');
 
-        setTransactions((prev) => prev.map((item) => (item.id === transactionId ? { ...item, status: 'confirmed' } : item)));
-        setWallet((prev) => ({ ...prev, blocked: Math.max(0, prev.blocked - tx.amount) }));
-
         if (!USE_MOCK) {
-          await updateDoc(doc(db, 'transactions', transactionId), {
-            status: 'confirmed',
-            updatedAt: serverTimestamp(),
+          await api.confirmSecretCode({
+            transactionId,
+            secretCode,
+            idempotencyKey: `confirm-${transactionId}-${Date.now()}`,
           });
         }
+        setTransactions((prev) => prev.map((item) => (item.id === transactionId ? { ...item, status: 'confirmed' } : item)));
+        setWallet((prev) => ({ ...prev, blocked: Math.max(0, prev.blocked - tx.amount) }));
 
         await pushNotification('Paiement libéré', `Le paiement de ${tx.amount.toLocaleString()} XAF a été confirmé.`);
       },
@@ -433,17 +388,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         setTransactions((prev) => prev.map((item) => (item.id === transactionId ? { ...item, status: 'dispute' } : item)));
 
         if (!USE_MOCK) {
-          const ref = await addDoc(collection(db, 'disputes'), {
-            transactionId,
-            reason: created.reason,
-            status: 'open',
-            createdAt: serverTimestamp(),
-          });
-          created.id = ref.id;
-          await updateDoc(doc(db, 'transactions', transactionId), {
-            status: 'dispute',
-            updatedAt: serverTimestamp(),
-          });
+          await api.openDispute({ transactionId, reason: created.reason });
         }
 
         await pushNotification('Litige ouvert', `Le litige ${created.id} a bien été enregistré.`);
@@ -466,17 +411,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (!USE_MOCK) {
-          await updateDoc(doc(db, 'disputes', disputeId), {
-            status: 'resolved',
-            resolution,
-            updatedAt: serverTimestamp(),
-          });
-          if (tx) {
-            await updateDoc(doc(db, 'transactions', tx.id), {
-              status: resolution === 'refund' ? 'refunded' : 'confirmed',
-              updatedAt: serverTimestamp(),
-            });
-          }
+          await api.resolveDispute({ disputeId, resolution });
         }
 
         await pushNotification(
@@ -500,15 +435,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         setWallet((prev) => ({ ...prev, balance: prev.balance + rounded }));
 
         if (!USE_MOCK && user?.uid) {
-          await setDoc(
-            doc(db, 'wallets', user.uid),
-            {
-              balance: increment(rounded),
-              currency: 'XAF',
-              updatedAt: serverTimestamp(),
-            },
-            { merge: true },
-          );
+          await api.topUpWallet({ amount: rounded, idempotencyKey: `topup-${user.uid}-${Date.now()}` });
         }
 
         await pushNotification('Wallet rechargé', `${rounded.toLocaleString()} XAF ont été ajoutés.`);
