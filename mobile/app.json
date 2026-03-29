@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Bird Auction",
+    "slug": "bird-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": ["**/*"],
+    "android": {
+      "package": "com.bird.auction"
+    },
+    "ios": {
+      "bundleIdentifier": "com.bird.auction"
+    }
+  }
+}

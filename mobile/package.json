@@ -1,0 +1,30 @@
+{
+  "name": "bird-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "node_modules/expo/AppEntry.js",
+  "engines": {
+    "node": ">=18 <23"
+  },
+  "scripts": {
+    "start": "expo start --offline",
+    "android": "expo start --offline --android",
+    "ios": "expo start --offline --ios",
+    "web": "expo start --offline --web",
+    "start:online": "expo start"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^1.23.1",
+    "@types/react": "~18.2.79",
+    "expo": "~51.0.0",
+    "expo-constants": "~16.0.2",
+    "expo-firebase-core": "^6.0.0",
+    "expo-firebase-recaptcha": "^2.3.1",
+    "expo-status-bar": "~1.12.1",
+    "firebase": "^10.13.2",
+    "react": "18.2.0",
+    "react-native": "0.74.1",
+    "react-native-webview": "13.8.6",
+    "typescript": "~5.3.3"
+  }
+}
