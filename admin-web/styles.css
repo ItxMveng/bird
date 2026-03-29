@@ -9,8 +9,12 @@ button.ghost { background: transparent; }
 .hidden { display: none; }
 .tabs { display: flex; gap: 8px; margin-top: 16px; }
 .tab.active { background: #1d4ed8; border-color: #3b82f6; }
+.feedback { margin-top: 10px; color: #93c5fd; min-height: 20px; }
+.toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+.toolbar input { min-width: 220px; }
 .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .kpi { background: #102541; border: 1px solid #1e3a5f; border-radius: 10px; padding: 12px; }
 .table { width: 100%; border-collapse: collapse; }
 .table th, .table td { border-bottom: 1px solid #1f3553; padding: 8px; text-align: left; font-size: 13px; }
 .badge { border: 1px solid #3b82f6; border-radius: 999px; padding: 2px 8px; }
+.muted { color: #94a3b8; font-size: 12px; }

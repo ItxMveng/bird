@@ -15,6 +15,24 @@ const BASE_URL = window.BIRD_API_BASE_URL || 'https://us-central1-bird-af69c.clo
 const authCard = document.getElementById('authCard');
 const dashboard = document.getElementById('dashboard');
 const authFeedback = document.getElementById('authFeedback');
+const globalFeedback = document.getElementById('globalFeedback');
+
+const state = {
+  disputes: [],
+  auctions: [],
+  users: [],
+  search: {
+    disputes: '',
+    auctions: '',
+    users: '',
+  },
+  limit: 50,
+};
+
+function setFeedback(message, isError = false) {
+  globalFeedback.textContent = message;
+  globalFeedback.style.color = isError ? '#fca5a5' : '#93c5fd';
+}
 
 async function callFn(name, data = {}) {
   const token = await auth.currentUser.getIdToken();
@@ -26,9 +44,20 @@ async function callFn(name, data = {}) {
     },
     body: JSON.stringify({ data }),
   });
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+  if (!response.ok) {
+    if (response.status === 403 || response.status === 401) {
+      throw new Error('Accès refusé: compte non admin ou session expirée.');
+    }
+    throw new Error(`HTTP ${response.status}`);
+  }
+
   const payload = await response.json();
   return payload.result;
+}
+
+function tableRowsOrEmpty(rowsHtml, emptyMessage) {
+  return rowsHtml.length > 0 ? rowsHtml.join('') : `<tr><td colspan="99" class="muted">${emptyMessage}</td></tr>`;
 }
 
 function renderOverview(result) {
@@ -43,33 +72,146 @@ function renderOverview(result) {
     <h3>Recharges récentes</h3>
     <table class="table"><thead><tr><th>Wallet</th><th>Type</th><th>Montant</th><th>Status</th></tr></thead>
     <tbody>
-      ${result.recentWalletTransactions.map((tx) => `<tr><td>${tx.walletId}</td><td>${tx.type}</td><td>${tx.amount}</td><td><span class="badge">${tx.status}</span></td></tr>`).join('')}
+      ${tableRowsOrEmpty(result.recentWalletTransactions.map((tx) => `<tr><td>${tx.walletId}</td><td>${tx.type}</td><td>${tx.amount}</td><td><span class="badge">${tx.status}</span></td></tr>`), 'Aucune recharge récente')}
     </tbody></table>
   `;
 }
 
-function renderTable(panelId, title, rows, cols) {
-  const panel = document.getElementById(panelId);
+function renderDisputes() {
+  const panel = document.getElementById('disputes');
+  const rows = state.disputes
+    .filter((d) => `${d.id} ${d.status} ${d.reason}`.toLowerCase().includes(state.search.disputes.toLowerCase()))
+    .map((d) => `
+      <tr>
+        <td>${d.id}</td>
+        <td>${d.status}</td>
+        <td>${d.reason}</td>
+        <td>${d.transactionId}</td>
+        <td>
+          <button class="ghost" data-resolve="refund" data-id="${d.id}" ${d.status !== 'open' ? 'disabled' : ''}>Refund</button>
+          <button class="ghost" data-resolve="pay_seller" data-id="${d.id}" ${d.status !== 'open' ? 'disabled' : ''}>Pay seller</button>
+        </td>
+      </tr>
+    `);
+
   panel.innerHTML = `
-    <h3>${title}</h3>
-    <table class="table"><thead><tr>${cols.map((c) => `<th>${c}</th>`).join('')}</tr></thead>
-    <tbody>${rows.map((r) => `<tr>${r.map((v) => `<td>${v ?? ''}</td>`).join('')}</tr>`).join('')}</tbody>
+    <h3>Litiges</h3>
+    <div class="toolbar">
+      <input id="searchDisputes" placeholder="Rechercher (id, statut, raison)" value="${state.search.disputes}" />
+    </div>
+    <table class="table"><thead><tr><th>ID</th><th>Status</th><th>Raison</th><th>Transaction</th><th>Actions</th></tr></thead>
+    <tbody>${tableRowsOrEmpty(rows, 'Aucun litige')}</tbody>
     </table>
   `;
+
+  panel.querySelector('#searchDisputes').addEventListener('input', (e) => {
+    state.search.disputes = e.target.value;
+    renderDisputes();
+  });
+
+  panel.querySelectorAll('button[data-resolve]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const disputeId = btn.dataset.id;
+      const resolution = btn.dataset.resolve;
+      setFeedback(`Résolution ${resolution} en cours...`);
+      try {
+        await callFn('resolveDispute', { disputeId, resolution });
+        setFeedback(`Litige ${disputeId} résolu (${resolution}).`);
+        await loadDashboard();
+      } catch (e) {
+        setFeedback(e.message, true);
+      }
+    });
+  });
+}
+
+function renderAuctions() {
+  const panel = document.getElementById('auctions');
+  const rows = state.auctions
+    .filter((a) => `${a.id} ${a.status} ${a.sellerId}`.toLowerCase().includes(state.search.auctions.toLowerCase()))
+    .map((a) => `<tr><td>${a.id}</td><td>${a.status}</td><td>${a.currentPrice ?? ''}</td><td>${a.sellerId}</td><td>${a.category ?? ''}</td></tr>`);
+
+  panel.innerHTML = `
+    <h3>Enchères</h3>
+    <div class="toolbar">
+      <input id="searchAuctions" placeholder="Rechercher (id, statut, seller)" value="${state.search.auctions}" />
+    </div>
+    <table class="table"><thead><tr><th>ID</th><th>Status</th><th>Prix</th><th>Seller</th><th>Catégorie</th></tr></thead>
+    <tbody>${tableRowsOrEmpty(rows, 'Aucune enchère')}</tbody></table>
+  `;
+
+  panel.querySelector('#searchAuctions').addEventListener('input', (e) => {
+    state.search.auctions = e.target.value;
+    renderAuctions();
+  });
+}
+
+function renderUsers() {
+  const panel = document.getElementById('users');
+  const rows = state.users
+    .filter((u) => `${u.id} ${u.role} ${u.status} ${u.email || ''}`.toLowerCase().includes(state.search.users.toLowerCase()))
+    .map((u) => {
+      const nextStatus = u.status === 'suspended' ? 'active' : 'suspended';
+      const actionLabel = nextStatus === 'active' ? 'Réactiver' : 'Suspendre';
+      return `
+        <tr>
+          <td>${u.id}</td>
+          <td>${u.role ?? 'user'}</td>
+          <td>${u.status ?? 'active'}</td>
+          <td>${u.email || ''}</td>
+          <td><button class="ghost" data-user-id="${u.id}" data-status="${nextStatus}">${actionLabel}</button></td>
+        </tr>
+      `;
+    });
+
+  panel.innerHTML = `
+    <h3>Utilisateurs</h3>
+    <div class="toolbar">
+      <input id="searchUsers" placeholder="Rechercher (uid, rôle, status, email)" value="${state.search.users}" />
+    </div>
+    <table class="table"><thead><tr><th>UID</th><th>Role</th><th>Status</th><th>Email</th><th>Action</th></tr></thead>
+    <tbody>${tableRowsOrEmpty(rows, 'Aucun utilisateur')}</tbody></table>
+  `;
+
+  panel.querySelector('#searchUsers').addEventListener('input', (e) => {
+    state.search.users = e.target.value;
+    renderUsers();
+  });
+
+  panel.querySelectorAll('button[data-user-id]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const targetUid = btn.dataset.userId;
+      const status = btn.dataset.status;
+      setFeedback(`Mise à jour utilisateur ${targetUid}...`);
+      try {
+        await callFn('adminSetUserStatus', { targetUid, status });
+        setFeedback(`Utilisateur ${targetUid} => ${status}`);
+        await loadDashboard();
+      } catch (e) {
+        setFeedback(e.message, true);
+      }
+    });
+  });
 }
 
 async function loadDashboard() {
+  setFeedback('Chargement dashboard...');
   const [overview, disputes, auctions, users] = await Promise.all([
     callFn('adminOverview'),
-    callFn('adminListDisputes', { limit: 50 }),
-    callFn('adminListAuctions', { limit: 50 }),
-    callFn('adminListUsers', { limit: 50 }),
+    callFn('adminListDisputes', { limit: state.limit }),
+    callFn('adminListAuctions', { limit: state.limit }),
+    callFn('adminListUsers', { limit: state.limit }),
   ]);
 
+  state.disputes = disputes.disputes || [];
+  state.auctions = auctions.auctions || [];
+  state.users = users.users || [];
+
   renderOverview(overview);
-  renderTable('disputes', 'Litiges', disputes.disputes.map((d) => [d.id, d.status, d.reason, d.transactionId]), ['ID', 'Status', 'Raison', 'Transaction']);
-  renderTable('auctions', 'Enchères', auctions.auctions.map((a) => [a.id, a.status, a.currentPrice, a.sellerId]), ['ID', 'Status', 'Prix', 'Seller']);
-  renderTable('users', 'Utilisateurs', users.users.map((u) => [u.id, u.role, u.status, u.email || '']), ['UID', 'Role', 'Status', 'Email']);
+  renderDisputes();
+  renderAuctions();
+  renderUsers();
+  setFeedback('Dashboard synchronisé.');
 }
 
 for (const btn of document.querySelectorAll('.tab')) {
@@ -93,6 +235,7 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
     authFeedback.textContent = '';
   } catch (e) {
     authFeedback.textContent = `Erreur: ${e.message}`;
+    setFeedback('', false);
   }
 });
 
@@ -100,4 +243,5 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
   await signOut(auth);
   dashboard.classList.add('hidden');
   authCard.classList.remove('hidden');
+  setFeedback('Déconnecté.');
 });

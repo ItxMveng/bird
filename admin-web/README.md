@@ -25,4 +25,13 @@ Définir avant chargement page:
 - `adminListDisputes`
 - `adminListAuctions`
 - `adminListUsers`
-- `adminSetUserStatus` (backend prêt, UI action à étendre)
+- `adminSetUserStatus`
+- `resolveDispute`
+
+## Fonctionnalités V2 incluses
+- Recherche locale par onglet (litiges/enchères/utilisateurs)
+- Actions inline:
+  - résolution litige (`refund` / `pay_seller`)
+  - suspension/réactivation utilisateur
+- Feedback global: loading, succès, erreur
+- États vides explicites dans les tableaux

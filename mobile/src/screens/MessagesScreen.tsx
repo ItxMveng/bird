@@ -72,6 +72,7 @@ export function MessagesScreen({ onBack, onOpenThread }: { onBack: () => void; o
           );
         })}
       </View>
+      {filteredThreads.length === 0 ? <Text style={styles.emptyText}>Aucune conversation dans cette section.</Text> : null}
     </BirdScreen>
   );
 }
@@ -171,5 +172,12 @@ const styles = StyleSheet.create({
     color: '#dbeafe',
     fontSize: 20,
     lineHeight: 20,
+  },
+  emptyText: {
+    color: '#94a3b8',
+    textAlign: 'center',
+    marginTop: 16,
+    fontSize: 13,
+    fontFamily: 'sans-serif',
   },
 });

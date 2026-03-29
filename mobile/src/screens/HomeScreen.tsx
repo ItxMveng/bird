@@ -116,6 +116,13 @@ export function HomeScreen({
           </Pressable>
         ))}
       </View>
+      {displayedAuctions.length === 0 ? (
+        <BirdCard>
+          <Text style={styles.emptyTitle}>Aucune enchère pour le moment</Text>
+          <Text style={styles.emptyText}>Réessayez avec une autre catégorie ou créez votre première enchère.</Text>
+          <BirdButton label="Explorer les enchères" onPress={onOpenSearch} />
+        </BirdCard>
+      ) : null}
 
       <View style={styles.quickRow}>
         <Pressable style={styles.quickBtn} onPress={onOpenCreateAuction}>
@@ -259,6 +266,17 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
   },
+  emptyTitle: {
+    color: palette.text,
+    fontSize: 18,
+    fontFamily: 'sans-serif-medium',
+  },
+  emptyText: {
+    color: '#94a3b8',
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: 'sans-serif',
+  },
   secureTag: {
     alignSelf: 'flex-start',
     borderRadius: 999,
@@ -324,4 +342,3 @@ const styles = StyleSheet.create({
     fontFamily: 'sans-serif-medium',
   },
 });
-

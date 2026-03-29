@@ -112,6 +112,7 @@ export function WalletScreen({ onBack }: { onBack: () => void }) {
           </View>
         ))}
       </View>
+      {activities.length === 0 ? <Text style={styles.emptyText}>Aucune activité récente pour l’instant.</Text> : null}
 
       {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}
     </BirdScreen>
@@ -256,5 +257,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'sans-serif-medium',
   },
+  emptyText: {
+    color: '#94a3b8',
+    textAlign: 'center',
+    fontSize: 13,
+    fontFamily: 'sans-serif',
+  },
 });
-

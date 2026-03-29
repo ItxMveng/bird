@@ -1,28 +1,25 @@
-# STATUS — Bird final (user/admin)
+# STATUS — Bird (final polish)
 
 Date: 2026-03-29
 
-## Finalisé côté USER mobile
-- Surface admin retirée de l’app user (route/bouton/import/screen).
-- Navigation user centralisée via router interne.
-- Flux critiques user via backend Functions uniquement.
-- Initial state orienté réel (mock réduit au mode explicite).
+## UX user finalisée (ciblée)
+- Empty states ajoutés: home, wallet, messages, notifications.
+- Feedback litige simplifié et cohérent (plus de double appel API).
+- Surface admin confirmée absente côté app user.
 
-## Créé côté ADMIN web
-- Nouveau dashboard web indépendant (`admin-web/`).
-- Auth Firebase + chargement dashboard via endpoints admin.
-- Modules disponibles (MVP):
-  - overview KPI
-  - litiges
-  - enchères
-  - utilisateurs
+## Dashboard admin web V2
+- Recherche locale par onglet.
+- Actions inline: resolve dispute (refund/pay_seller), suspension/réactivation user.
+- Feedback global loading/succès/erreur + états vides tableaux.
+- Auth admin requise (échec propre si non-admin).
 
-## Backend admin complémentaire
-- Endpoints ajoutés: `adminOverview`, `adminListDisputes`, `adminListAuctions`, `adminListUsers`, `adminSetUserStatus`.
-- Vérification admin stricte centralisée (`ensureAdmin`).
+## Tests
+- `functions`: tests unit/domain + flow tests + scénario e2e simulé.
+- `mobile`: typecheck OK.
 
-## Qualité / tests
-- Build + tests functions passent.
-- Typecheck mobile passe.
-- Test de flux domaine ajouté.
-- E2E Emulator complet reste à compléter (multi-acteurs + cas fraude avancés).
+## Ready for production
+- Docs mises à jour: architecture, sécurité, plan, statut, README admin-web.
+- Checklist production finale ajoutée dans `SECURITY.md`.
+
+## Reste éventuel
+- E2E Firebase Emulator multi-acteurs réels (setup complet emulators + data fixtures).

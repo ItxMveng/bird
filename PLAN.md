@@ -1,9 +1,6 @@
-# PLAN — user/admin finalisation
+# PLAN — Finitions produit + qualité + production
 
-## Phase A Audit ciblé user/admin ✅
-## Phase B Séparation user/admin ✅
-## Phase C Finalisation app user ✅ (ciblée)
-## Phase D Dashboard web admin indépendant ✅ (MVP fonctionnel)
-## Phase E Backend admin complémentaire ✅
-## Phase F Observabilité / qualité / tests ✅ (partiel E2E emulator)
-## Phase G Documentation finale ✅
+1. UX user finale ✅
+2. Dashboard admin web V2 ✅
+3. Tests ciblés + scénario E2E simulé ✅
+4. Ready for production ✅ (checklist et docs finales)

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { api } from '../services/api';
 import { useAppData } from '../context/AppDataContext';
 import { Transaction } from '../types';
 import { BirdButton, BirdCard, BirdInput, BirdScreen, palette } from '../components/ui-kit';
@@ -23,12 +22,7 @@ export function DisputeScreen({ transaction, onBack }: { transaction: Transactio
 
     try {
       await openDisputeLocal(transaction.id, finalReason);
-      try {
-        await api.openDispute({ transactionId: transaction.id, reason: finalReason });
-        setFeedback('Litige transmis à la médiation.');
-      } catch {
-        setFeedback('Litige enregistré via Firebase. Synchronisation API en attente.');
-      }
+      setFeedback('Litige transmis à la médiation.');
     } catch (error) {
       setFeedback((error as Error).message);
     } finally {
@@ -97,6 +91,7 @@ export function DisputeScreen({ transaction, onBack }: { transaction: Transactio
       </BirdCard>
 
       <BirdButton label={loading ? 'Traitement...' : 'Signaler le litige'} onPress={submit} loading={loading} disabled={loading} />
+      {feedback && feedback.toLowerCase().includes('erreur') ? <BirdButton label="Réessayer" onPress={submit} variant="ghost" /> : null}
       <BirdButton label="Contacter le support direct" onPress={() => setFeedback('Support: ticket instantané créé.')} variant="ghost" />
 
       {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}
@@ -224,4 +219,3 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 });
-

@@ -1,34 +1,28 @@
-# ARCHITECTURE — finalisation user/admin (2026-03-29)
+# ARCHITECTURE — final product polish (2026-03-29)
 
-## 1) Backend unique partagé (Firebase Functions)
-- Le backend métier reste unique pour user + admin.
-- Cycle escrow conservé: `bid -> close -> block -> deliver -> confirm -> release`.
-- Opérations critiques/financières uniquement côté Functions.
+## Backend unique partagé (Firebase Functions)
+- Le backend métier reste unique (user + admin) avec RBAC strict.
+- Cycle escrow: `bid -> close -> block -> deliver -> confirm -> release`.
+- Endpoints user: `publishAuction`, `placeBid`, `markDelivered`, `confirmSecretCode`, `openDispute`, `topUpWallet`, `getTransactionSecretCode`.
+- Endpoints admin: `resolveDispute`, `adminOverview`, `adminListDisputes`, `adminListAuctions`, `adminListUsers`, `adminSetUserStatus`.
 
-### Endpoints user principaux
-- `publishAuction`, `placeBid`, `markDelivered`, `confirmSecretCode`, `openDispute`, `topUpWallet`, `getTransactionSecretCode`.
+## App mobile USER
+- Surface admin supprimée.
+- Navigation user via router interne (`mobile/src/navigation/router.ts`).
+- Actions critiques via API Functions (pas de mutation financière cliente).
+- UX: empty states/feedbacks renforcés sur écrans clés.
 
-### Endpoints admin principaux
-- `resolveDispute` (existant, admin only)
-- `adminOverview`
-- `adminListDisputes`
-- `adminListAuctions`
-- `adminListUsers`
-- `adminSetUserStatus`
+## Dashboard WEB ADMIN (indépendant)
+- Frontend séparé: `admin-web/`.
+- Auth Firebase obligatoire.
+- Modules V2:
+  - KPI overview
+  - Litiges (recherche + actions refund/pay_seller)
+  - Enchères (recherche)
+  - Utilisateurs (recherche + suspend/reactivate)
 
-## 2) Mobile USER app
-- Aucune surface admin exposée.
-- Navigation user structurée via `mobile/src/navigation/router.ts`.
-- Actions critiques via `mobile/src/services/api.ts` (pas de logique financière client).
-- Mock non prioritaire limité; chemin réel privilégié.
-
-## 3) Dashboard WEB ADMIN (indépendant)
-- Nouveau frontend séparé: `admin-web/`.
-- Auth admin Firebase obligatoire.
-- Vue KPI + listes litiges/enchères/users via endpoints admin backend.
-- Séparation stricte vis-à-vis de l’app mobile user.
-
-## 4) Firestore / RBAC
-- Écritures client interdites sur collections sensibles (`wallets`, `transactions`, `bids`, `auctions`, `disputes`, `transaction_secrets`).
-- Lecture disputes limitée aux parties concernées + admin.
-- Actions admin validées côté backend (`ensureAdmin`).
+## Données / sécurité
+- Writes client interdits sur collections sensibles.
+- Litiges visibles parties concernées + admin.
+- `transaction_secrets` lisible buyer-only.
+- Logs structurés avec `traceId` sur opérations critiques.

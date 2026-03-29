@@ -28,3 +28,15 @@
 - `SECRET_CODE_SALT`
 - `PAYMENT_WEBHOOK_SECRET`
 - `PAYMENT_WEBHOOK_TOLERANCE_SEC`
+
+## Checklist production finale
+1. Vérifier secrets en environnement (prod uniquement, jamais commit).
+2. Vérifier comptes admin (rôle `admin`) et MFA côté Firebase Auth.
+3. Déployer functions + rules + indexes synchronisés.
+4. Déployer admin-web avec config runtime Firebase/API.
+5. Exécuter smoke tests post-déploiement:
+   - bid -> close -> block -> deliver -> confirm
+   - open dispute -> resolve (refund/pay_seller)
+   - webhook signature invalid/replay
+   - appel endpoint admin par user non-admin (doit échouer)
+6. Activer monitoring et alertes sur erreurs webhook + disputes + wallet anomalies.

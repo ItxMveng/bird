@@ -29,6 +29,7 @@ export function NotificationsScreen({ onBack }: { onBack: () => void }) {
           <Text style={styles.body}>{notification.body}</Text>
         </Pressable>
       ))}
+      {notifications.length === 0 ? <Text style={styles.emptyText}>Aucune notification pour le moment.</Text> : null}
 
       <BirdButton label="Retour à l'accueil" onPress={onBack} variant="ghost" />
     </BirdScreen>
@@ -74,5 +75,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'serif',
     lineHeight: 17,
+  },
+  emptyText: {
+    color: '#94a3b8',
+    textAlign: 'center',
+    fontSize: 13,
+    fontFamily: 'sans-serif',
   },
 });
