@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { api } from '../services/api';
 import { useAppData } from '../context/AppDataContext';
+import { useAuth } from '../context/AuthContext';
 import { Transaction } from '../types';
 import { BirdButton, BirdCard, BirdScreen, palette } from '../components/ui-kit';
 import { formatXaf } from '../utils/format';
@@ -16,7 +17,9 @@ export function TransactionDetailScreen({
   onOpenDispute: (tx: Transaction) => void;
 }) {
   const { markDeliveredLocal, confirmTransactionLocal, auctions } = useAppData();
+  const { user } = useAuth();
   const [secretCode, setSecretCode] = useState('');
+  const [buyerCode, setBuyerCode] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<'none' | 'delivery' | 'confirm'>('none');
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -29,12 +32,7 @@ export function TransactionDetailScreen({
     setFeedback(null);
     try {
       await markDeliveredLocal(transaction.id);
-      try {
-        await api.markDelivered({ transactionId: transaction.id });
-        setFeedback('Colis en transit confirmé.');
-      } catch {
-        setFeedback('Transit validé localement, sync API en attente.');
-      }
+      setFeedback('Colis en transit confirmé.');
     } catch (error) {
       setFeedback((error as Error).message);
     } finally {
@@ -47,19 +45,25 @@ export function TransactionDetailScreen({
     setFeedback(null);
     try {
       await confirmTransactionLocal(transaction.id, secretCode);
-      try {
-        await api.confirmSecretCode({
-          transactionId: transaction.id,
-          secretCode,
-          idempotencyKey: `confirm-${transaction.id}-${Date.now()}`,
-        });
-        setFeedback('Réception confirmée, fonds libérés.');
-      } catch {
-        setFeedback('Réception validée localement, sync API en attente.');
-      }
+      setFeedback('Réception confirmée, fonds libérés.');
       setSecretCode('');
     } catch (error) {
       setFeedback((error as Error).message);
+    } finally {
+      setLoadingAction('none');
+    }
+  };
+
+  const loadBuyerCode = async () => {
+    if (transaction.buyerId !== user?.uid) return;
+    setLoadingAction('confirm');
+    setFeedback(null);
+    try {
+      const response = await api.getTransactionSecretCode({ transactionId: transaction.id });
+      setBuyerCode(response.result.secretCode);
+      setFeedback('Code secret récupéré. Partagez-le uniquement lors de la remise.');
+    } catch {
+      setFeedback('Impossible de récupérer le code secret pour le moment.');
     } finally {
       setLoadingAction('none');
     }
@@ -125,6 +129,14 @@ export function TransactionDetailScreen({
           loading={loadingAction === 'confirm'}
           disabled={loadingAction !== 'none' || secretCode.length < 6}
         />
+        {transaction.buyerId === user?.uid ? (
+          <BirdButton
+            label={buyerCode ? `Mon code: ${buyerCode}` : 'Afficher mon code secret'}
+            onPress={loadBuyerCode}
+            variant="ghost"
+            disabled={loadingAction !== 'none'}
+          />
+        ) : null}
         <BirdButton
           label="Signaler un litige"
           onPress={() => onOpenDispute(transaction)}
@@ -327,4 +339,3 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
   },
 });
-

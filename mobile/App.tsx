@@ -19,31 +19,13 @@ import { SearchScreen } from './src/screens/SearchScreen';
 import { TransactionDetailScreen } from './src/screens/TransactionDetailScreen';
 import { TransactionsScreen } from './src/screens/TransactionsScreen';
 import { WalletScreen } from './src/screens/WalletScreen';
-import { Auction, MessageThread, Transaction } from './src/types';
-
-type Route =
-  | 'home'
-  | 'auction'
-  | 'wallet'
-  | 'create'
-  | 'transactions'
-  | 'transactionDetail'
-  | 'dispute'
-  | 'profile'
-  | 'search'
-  | 'notifications'
-  | 'messages'
-  | 'conversation'
-  | 'ratings'
-  | 'admin';
+import { Route, useAppRouter } from './src/navigation/router';
 
 function AppInner() {
   const { user, step, logout } = useAuth();
   const [showSplash, setShowSplash] = useState(true);
-  const [route, setRoute] = useState<Route>('home');
-  const [selectedAuction, setSelectedAuction] = useState<Auction | null>(null);
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
-  const [selectedThread, setSelectedThread] = useState<MessageThread | null>(null);
+  const router = useAppRouter();
+  const { route, go, selectedAuction, selectedTransaction, selectedThread, openAuction, openTransaction, openDispute, openThread } = router;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerTranslate = useRef(new Animated.Value(-280)).current;
 
@@ -68,7 +50,7 @@ function AppInner() {
   ];
 
   const goTo = (next: Route) => {
-    setRoute(next);
+    go(next);
     setDrawerOpen(false);
   };
 
@@ -80,46 +62,39 @@ function AppInner() {
       {route === 'home' && (
         <HomeScreen
           onOpenAuction={(auction) => {
-            setSelectedAuction(auction);
-            setRoute('auction');
+            openAuction(auction);
           }}
-          onOpenCreateAuction={() => setRoute('create')}
-          onOpenTransactions={() => setRoute('transactions')}
-          onOpenSearch={() => setRoute('search')}
-          onOpenMessages={() => setRoute('messages')}
-          onOpenWallet={() => setRoute('wallet')}
+          onOpenCreateAuction={() => go('create')}
+          onOpenTransactions={() => go('transactions')}
+          onOpenSearch={() => go('search')}
+          onOpenMessages={() => go('messages')}
+          onOpenWallet={() => go('wallet')}
         />
       )}
-      {route === 'auction' && selectedAuction && <AuctionDetailScreen auction={selectedAuction} onBack={() => setRoute('home')} />}
-      {route === 'wallet' && <WalletScreen onBack={() => setRoute('home')} />}
-      {route === 'create' && <CreateAuctionScreen onBack={() => setRoute('home')} />}
+      {route === 'auction' && selectedAuction && <AuctionDetailScreen auction={selectedAuction} onBack={() => go('home')} />}
+      {route === 'wallet' && <WalletScreen onBack={() => go('home')} />}
+      {route === 'create' && <CreateAuctionScreen onBack={() => go('home')} />}
       {route === 'transactions' && (
         <TransactionsScreen
-          onBack={() => setRoute('home')}
-          onOpenTransaction={(tx) => {
-            setSelectedTransaction(tx);
-            setRoute('transactionDetail');
-          }}
+          onBack={() => go('home')}
+          onOpenTransaction={(tx) => openTransaction(tx)}
         />
       )}
       {route === 'transactionDetail' && selectedTransaction && (
         <TransactionDetailScreen
           transaction={selectedTransaction}
-          onBack={() => setRoute('transactions')}
-          onOpenDispute={(tx) => {
-            setSelectedTransaction(tx);
-            setRoute('dispute');
-          }}
+          onBack={() => go('transactions')}
+          onOpenDispute={(tx) => openDispute(tx)}
         />
       )}
-      {route === 'dispute' && selectedTransaction && <DisputeScreen transaction={selectedTransaction} onBack={() => setRoute('transactionDetail')} />}
-      {route === 'profile' && <ProfileScreen onBack={() => setRoute('home')} />}
-      {route === 'search' && <SearchScreen onBack={() => setRoute('home')} onOpenAuction={(a) => { setSelectedAuction(a); setRoute('auction'); }} />}
-      {route === 'notifications' && <NotificationsScreen onBack={() => setRoute('home')} />}
-      {route === 'messages' && <MessagesScreen onBack={() => setRoute('home')} onOpenThread={(th) => { setSelectedThread(th); setRoute('conversation'); }} />}
-      {route === 'conversation' && selectedThread && <ConversationScreen thread={selectedThread} onBack={() => setRoute('messages')} />}
-      {route === 'ratings' && <RatingsScreen onBack={() => setRoute('home')} />}
-      {route === 'admin' && <AdminDashboardScreen onBack={() => setRoute('home')} />}
+      {route === 'dispute' && selectedTransaction && <DisputeScreen transaction={selectedTransaction} onBack={() => go('transactionDetail')} />}
+      {route === 'profile' && <ProfileScreen onBack={() => go('home')} />}
+      {route === 'search' && <SearchScreen onBack={() => go('home')} onOpenAuction={(a) => openAuction(a)} />}
+      {route === 'notifications' && <NotificationsScreen onBack={() => go('home')} />}
+      {route === 'messages' && <MessagesScreen onBack={() => go('home')} onOpenThread={(th) => openThread(th)} />}
+      {route === 'conversation' && selectedThread && <ConversationScreen thread={selectedThread} onBack={() => go('messages')} />}
+      {route === 'ratings' && <RatingsScreen onBack={() => go('home')} />}
+      {route === 'admin' && <AdminDashboardScreen onBack={() => go('home')} />}
 
       {showSidebarToggle ? (
         <View style={styles.sideControls}>

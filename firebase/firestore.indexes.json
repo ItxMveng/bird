@@ -24,6 +24,24 @@
         { "fieldPath": "auctionId", "order": "ASCENDING" },
         { "fieldPath": "amount", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "transactions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "buyerId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "disputes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "transactionId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

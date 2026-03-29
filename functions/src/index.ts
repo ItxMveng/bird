@@ -20,6 +20,8 @@ setGlobalOptions({ region: 'us-central1', maxInstances: 10 });
 const CONFIG = {
   commissionBps: 500,
   secretCodeSalt: process.env.SECRET_CODE_SALT ?? 'dev-salt',
+  webhookSecret: process.env.PAYMENT_WEBHOOK_SECRET ?? '',
+  webhookToleranceSec: Number(process.env.PAYMENT_WEBHOOK_TOLERANCE_SEC ?? '300'),
 };
 
 type UserRole = 'user' | 'admin';
@@ -56,8 +58,28 @@ type TransactionDoc = {
   deliveredAt?: admin.firestore.Timestamp;
 };
 
+type TransactionSecretDoc = {
+  transactionId: string;
+  buyerId: string;
+  secretCode: string;
+  expiresAt: admin.firestore.Timestamp;
+  createdAt: admin.firestore.FieldValue;
+};
+
 function hashSecretCode(secretCode: string): string {
   return crypto.createHash('sha256').update(`${CONFIG.secretCodeSalt}:${secretCode}`).digest('hex');
+}
+
+function hashWebhookPayload(timestamp: string, rawPayload: Buffer | string): string {
+  const payload = Buffer.isBuffer(rawPayload) ? rawPayload : Buffer.from(rawPayload);
+  return crypto.createHmac('sha256', CONFIG.webhookSecret).update(`${timestamp}.`).update(payload).digest('hex');
+}
+
+function safeEqualHex(expectedHex: string, candidateHex: string): boolean {
+  const expected = Buffer.from(expectedHex, 'hex');
+  const candidate = Buffer.from(candidateHex, 'hex');
+  if (expected.length === 0 || expected.length !== candidate.length) return false;
+  return crypto.timingSafeEqual(expected, candidate);
 }
 
 function randomSecretCode(): string {
@@ -117,54 +139,46 @@ async function createWalletTx(data: {
   });
 }
 
-async function blockBuyerFunds(params: { buyerId: string; amount: number; reference: string; traceId: string }) {
-  const walletRef = db.collection('wallets').doc(params.buyerId);
-  await db.runTransaction(async (tx) => {
-    const snap = await tx.get(walletRef);
-    const wallet = snap.data() as WalletDoc | undefined;
-    if (!wallet || wallet.balance < params.amount) {
-      throw new DomainError('ERR_WALLET_INSUFFICIENT', 'Fonds insuffisants au moment du blocage');
-    }
-    tx.update(walletRef, {
-      balance: wallet.balance - params.amount,
-      blocked: (wallet.blocked ?? 0) + params.amount,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-  });
-
-  await createWalletTx({
-    walletId: params.buyerId,
-    type: 'block',
-    amount: params.amount,
-    status: 'success',
-    reference: params.reference,
-    traceId: params.traceId,
-  });
+function logEvent(level: 'info' | 'warn' | 'error', event: string, payload: Record<string, unknown>) {
+  const body = JSON.stringify({ level, event, ...payload });
+  if (level === 'error') console.error(body);
+  else if (level === 'warn') console.warn(body);
+  else console.info(body);
 }
 
-async function releaseFundsToSeller(params: { buyerId: string; sellerId: string; amount: number; transactionId: string; traceId: string }) {
-  const buyerWalletRef = db.collection('wallets').doc(params.buyerId);
-  const sellerWalletRef = db.collection('wallets').doc(params.sellerId);
-  const commission = computeCommission(params.amount, CONFIG.commissionBps);
-  const netToSeller = params.amount - commission;
+async function settleToSeller(params: { transactionId: string; actorUid: string; allowStatuses: Array<TransactionDoc['status']>; traceId: string }) {
+  const txRef = db.collection('transactions').doc(params.transactionId);
+  const settlement = await db.runTransaction(async (tx) => {
+    const txSnap = await tx.get(txRef);
+    if (!txSnap.exists) throw new DomainError('ERR_TRANSACTION_NOT_FOUND', 'Transaction introuvable');
+    const txData = txSnap.data() as TransactionDoc;
+    if (txData.buyerId !== params.actorUid && txData.sellerId !== params.actorUid) {
+      throw new HttpsError('permission-denied', 'Accès refusé');
+    }
+    if (!params.allowStatuses.includes(txData.status)) {
+      throw new DomainError('ERR_TRANSACTION_NOT_BLOCKED', 'Transaction non confirmable');
+    }
 
-  await db.runTransaction(async (tx) => {
+    const buyerWalletRef = db.collection('wallets').doc(txData.buyerId);
+    const sellerWalletRef = db.collection('wallets').doc(txData.sellerId);
     const [buyerSnap, sellerSnap] = await Promise.all([tx.get(buyerWalletRef), tx.get(sellerWalletRef)]);
     const buyerWallet = buyerSnap.data() as WalletDoc | undefined;
     const sellerWallet = sellerSnap.data() as WalletDoc | undefined;
-    if (!buyerWallet || buyerWallet.blocked < params.amount) {
+    if (!buyerWallet || buyerWallet.blocked < txData.amount) {
       throw new DomainError('ERR_TRANSACTION_NOT_BLOCKED', 'Fonds bloqués insuffisants');
     }
 
+    const commission = computeCommission(txData.amount, CONFIG.commissionBps);
+    const netToSeller = txData.amount - commission;
+
     tx.update(buyerWalletRef, {
-      blocked: buyerWallet.blocked - params.amount,
+      blocked: buyerWallet.blocked - txData.amount,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-
     tx.set(
       sellerWalletRef,
       {
-        uid: params.sellerId,
+        uid: txData.sellerId,
         balance: (sellerWallet?.balance ?? 0) + netToSeller,
         blocked: sellerWallet?.blocked ?? 0,
         currency: 'XAF',
@@ -172,12 +186,15 @@ async function releaseFundsToSeller(params: { buyerId: string; sellerId: string;
       },
       { merge: true },
     );
+    tx.update(txRef, { status: 'confirmed', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+
+    return { ...txData, commission, netToSeller };
   });
 
   await Promise.all([
-    createWalletTx({ walletId: params.buyerId, type: 'release', amount: params.amount, status: 'success', reference: params.transactionId, traceId: params.traceId }),
-    createWalletTx({ walletId: params.sellerId, type: 'release', amount: netToSeller, status: 'success', reference: params.transactionId, traceId: params.traceId }),
-    createWalletTx({ walletId: params.sellerId, type: 'commission', amount: commission, status: 'success', reference: params.transactionId, traceId: params.traceId }),
+    createWalletTx({ walletId: settlement.buyerId, type: 'release', amount: settlement.amount, status: 'success', reference: params.transactionId, traceId: params.traceId }),
+    createWalletTx({ walletId: settlement.sellerId, type: 'release', amount: settlement.netToSeller, status: 'success', reference: params.transactionId, traceId: params.traceId }),
+    createWalletTx({ walletId: settlement.sellerId, type: 'commission', amount: settlement.commission, status: 'success', reference: params.transactionId, traceId: params.traceId }),
   ]);
 }
 
@@ -217,6 +234,7 @@ export const placeBid = onCall(async (request) => {
     const uid = await ensureAuthenticated(request.auth?.uid);
     const { auctionId, amount, idempotencyKey } = request.data as { auctionId: string; amount: number; idempotencyKey: string };
     if (!idempotencyKey) throw new DomainError('ERR_DUPLICATE_IDEMPOTENCY_KEY', 'idempotencyKey requis');
+    const traceId = crypto.randomUUID();
 
     const first = await ensureIdempotent(`bid_${uid}_${auctionId}`, idempotencyKey);
     if (!first) return { ok: true, duplicate: true };
@@ -257,6 +275,7 @@ export const placeBid = onCall(async (request) => {
       });
     });
 
+    logEvent('info', 'bid_placed', { traceId, uid, auctionId, amount });
     return { ok: true };
   } catch (error) {
     asDomainError(error);
@@ -280,23 +299,68 @@ export const closeExpiredAuctions = onSchedule('every 5 minutes', async () => {
       const auctionSnap = await tx.get(doc.ref);
       const fresh = auctionSnap.data() as AuctionDoc;
       if (fresh.status !== 'active') return;
+      if (!fresh.winnerId) return;
+
+      const buyerWalletRef = db.collection('wallets').doc(fresh.winnerId);
+      const buyerWalletSnap = await tx.get(buyerWalletRef);
+      const buyerWallet = buyerWalletSnap.data() as WalletDoc | undefined;
+
+      if (!buyerWallet || buyerWallet.balance < fresh.currentPrice) {
+        tx.update(doc.ref, {
+          status: 'closed_unsold',
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        logEvent('warn', 'auction_closed_unsold_insufficient_wallet', { traceId, auctionId: doc.id, winnerId: fresh.winnerId });
+        return;
+      }
 
       tx.update(doc.ref, { status: 'closed_sold', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
       const transactionRef = db.collection('transactions').doc();
+      const secretCode = randomSecretCode();
+      const expiresAt = admin.firestore.Timestamp.fromMillis(Date.now() + 7 * 24 * 3600 * 1000);
       tx.set(transactionRef, {
         auctionId: doc.id,
         buyerId: fresh.winnerId,
         sellerId: fresh.sellerId,
         amount: fresh.currentPrice,
         status: 'blocked',
-        secretCodeHash: hashSecretCode(randomSecretCode()),
-        expiresAt: admin.firestore.Timestamp.fromMillis(Date.now() + 7 * 24 * 3600 * 1000),
+        secretCodeHash: hashSecretCode(secretCode),
+        expiresAt,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      } satisfies TransactionDoc);
-    });
+      });
 
-    await blockBuyerFunds({ buyerId: auction.winnerId, amount: auction.currentPrice, reference: doc.id, traceId });
+      tx.set(db.collection('transaction_secrets').doc(transactionRef.id), {
+        transactionId: transactionRef.id,
+        buyerId: fresh.winnerId,
+        secretCode,
+        expiresAt,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      } satisfies TransactionSecretDoc);
+
+      tx.set(
+        buyerWalletRef,
+        {
+          uid: fresh.winnerId,
+          balance: buyerWallet.balance - fresh.currentPrice,
+          blocked: (buyerWallet.blocked ?? 0) + fresh.currentPrice,
+          currency: 'XAF',
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+
+      tx.set(db.collection('wallet_transactions').doc(), {
+        walletId: fresh.winnerId,
+        type: 'block',
+        amount: fresh.currentPrice,
+        status: 'success',
+        reference: transactionRef.id,
+        traceId,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+    logEvent('info', 'auction_closed_sold_blocked', { traceId, auctionId: doc.id, winnerId: auction.winnerId, amount: auction.currentPrice });
   }
 });
 
@@ -327,11 +391,9 @@ export const confirmSecretCode = onCall(async (request) => {
   try {
     const uid = await ensureAuthenticated(request.auth?.uid);
     const { transactionId, secretCode, idempotencyKey } = request.data as { transactionId: string; secretCode: string; idempotencyKey?: string };
-
-    if (idempotencyKey) {
-      const first = await ensureIdempotent(`confirm_${uid}_${transactionId}`, idempotencyKey);
-      if (!first) return { ok: true, duplicate: true };
-    }
+    if (!idempotencyKey) throw new DomainError('ERR_DUPLICATE_IDEMPOTENCY_KEY', 'idempotencyKey requis');
+    const first = await ensureIdempotent(`confirm_${uid}_${transactionId}`, idempotencyKey);
+    if (!first) return { ok: true, duplicate: true };
 
     const txRef = db.collection('transactions').doc(transactionId);
     const txSnap = await txRef.get();
@@ -340,11 +402,12 @@ export const confirmSecretCode = onCall(async (request) => {
 
     if (txData.buyerId !== uid && txData.sellerId !== uid) throw new HttpsError('permission-denied', 'Accès refusé');
     if (txData.status !== 'blocked' && txData.status !== 'delivered') throw new DomainError('ERR_TRANSACTION_NOT_BLOCKED', 'Transaction non confirmable');
+    if (txData.expiresAt.toMillis() < Date.now()) throw new DomainError('ERR_INVALID_SECRET_CODE', 'Code secret expiré');
     if (hashSecretCode(secretCode) !== txData.secretCodeHash) throw new DomainError('ERR_INVALID_SECRET_CODE', 'Code secret invalide');
 
     const traceId = crypto.randomUUID();
-    await releaseFundsToSeller({ buyerId: txData.buyerId, sellerId: txData.sellerId, amount: txData.amount, transactionId, traceId });
-    await txRef.update({ status: 'confirmed', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+    await settleToSeller({ transactionId, actorUid: uid, allowStatuses: ['blocked', 'delivered'], traceId });
+    logEvent('info', 'transaction_confirmed', { traceId, transactionId, actorUid: uid });
 
     return { ok: true };
   } catch (error) {
@@ -356,6 +419,7 @@ export const openDispute = onCall(async (request) => {
   try {
     const uid = await ensureAuthenticated(request.auth?.uid);
     const { transactionId, reason } = request.data as { transactionId: string; reason: string };
+    const traceId = crypto.randomUUID();
     const txRef = db.collection('transactions').doc(transactionId);
     const txSnap = await txRef.get();
     if (!txSnap.exists) throw new DomainError('ERR_TRANSACTION_NOT_FOUND', 'Transaction introuvable');
@@ -371,9 +435,11 @@ export const openDispute = onCall(async (request) => {
         openedBy: txData.buyerId === uid ? 'buyer' : 'seller',
         reason,
         status: 'open',
+        traceId,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       }),
     ]);
+    logEvent('info', 'dispute_opened', { traceId, transactionId, openedBy: uid });
 
     return { ok: true };
   } catch (error) {
@@ -403,8 +469,7 @@ export const resolveDispute = onCall(async (request) => {
     const traceId = crypto.randomUUID();
 
     if (resolution === 'pay_seller') {
-      await releaseFundsToSeller({ buyerId: txData.buyerId, sellerId: txData.sellerId, amount: txData.amount, transactionId: dispute.transactionId, traceId });
-      await txRef.update({ status: 'confirmed', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+      await settleToSeller({ transactionId: dispute.transactionId, actorUid: txData.sellerId, allowStatuses: ['dispute'], traceId });
     } else {
       const buyerWalletRef = db.collection('wallets').doc(txData.buyerId);
       await db.runTransaction(async (tx) => {
@@ -417,9 +482,9 @@ export const resolveDispute = onCall(async (request) => {
           balance: wallet.balance + txData.amount,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
+        tx.update(txRef, { status: 'refunded', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
       });
       await createWalletTx({ walletId: txData.buyerId, type: 'refund', amount: txData.amount, status: 'success', reference: dispute.transactionId, traceId });
-      await txRef.update({ status: 'refunded', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
     }
 
     await disputeRef.update({
@@ -428,6 +493,7 @@ export const resolveDispute = onCall(async (request) => {
       resolvedBy: uid,
       resolvedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
+    logEvent('info', 'dispute_resolved', { traceId, disputeId, resolution, resolvedBy: uid });
 
     return { ok: true };
   } catch (error) {
@@ -436,9 +502,75 @@ export const resolveDispute = onCall(async (request) => {
 });
 
 export const paymentWebhook = onRequest(async (request, response) => {
+  const traceId = crypto.randomUUID();
   try {
     if (request.method !== 'POST') {
       response.status(405).json({ ok: false, error: 'Method not allowed' });
+      return;
+    }
+
+    if (!CONFIG.webhookSecret) {
+      console.error(JSON.stringify({
+        level: 'error',
+        event: 'payment_webhook_rejected',
+        reason: 'missing_webhook_secret',
+        traceId,
+      }));
+      response.status(500).json({ ok: false, error: 'webhook_not_configured' });
+      return;
+    }
+
+    const timestampHeader = request.header('x-bird-timestamp') ?? '';
+    const signatureHeader = request.header('x-bird-signature') ?? '';
+    if (!timestampHeader || !signatureHeader) {
+      console.warn(JSON.stringify({
+        level: 'warn',
+        event: 'payment_webhook_rejected',
+        reason: 'missing_signature_or_timestamp',
+        traceId,
+      }));
+      response.status(401).json({ ok: false, error: 'invalid_signature' });
+      return;
+    }
+
+    const parsedTimestamp = Number.parseInt(timestampHeader, 10);
+    const nowSec = Math.floor(Date.now() / 1000);
+    const ageSec = Math.abs(nowSec - parsedTimestamp);
+    if (!Number.isFinite(parsedTimestamp) || ageSec > CONFIG.webhookToleranceSec) {
+      console.warn(JSON.stringify({
+        level: 'warn',
+        event: 'payment_webhook_rejected',
+        reason: 'expired_timestamp',
+        traceId,
+        ageSec,
+      }));
+      response.status(401).json({ ok: false, error: 'expired_request' });
+      return;
+    }
+
+    const rawPayload = request.rawBody ?? Buffer.from(JSON.stringify(request.body ?? {}));
+    const expectedSignature = hashWebhookPayload(timestampHeader, rawPayload);
+    if (!safeEqualHex(expectedSignature, signatureHeader)) {
+      console.warn(JSON.stringify({
+        level: 'warn',
+        event: 'payment_webhook_rejected',
+        reason: 'signature_mismatch',
+        traceId,
+      }));
+      response.status(401).json({ ok: false, error: 'invalid_signature' });
+      return;
+    }
+
+    const antiReplayKey = `${timestampHeader}:${signatureHeader}`;
+    const firstSignature = await ensureIdempotent('webhook_sig', antiReplayKey);
+    if (!firstSignature) {
+      console.warn(JSON.stringify({
+        level: 'warn',
+        event: 'payment_webhook_rejected',
+        reason: 'replay_detected',
+        traceId,
+      }));
+      response.status(409).json({ ok: false, error: 'replay_detected' });
       return;
     }
 
@@ -446,12 +578,23 @@ export const paymentWebhook = onRequest(async (request, response) => {
       uid: string; amount: number; providerReference: string; status: 'success' | 'failed';
     };
 
+    if (!uid || !providerReference || !Number.isFinite(amount) || amount <= 0 || (status !== 'success' && status !== 'failed')) {
+      console.warn(JSON.stringify({
+        level: 'warn',
+        event: 'payment_webhook_rejected',
+        reason: 'invalid_payload',
+        traceId,
+      }));
+      response.status(400).json({ ok: false, error: 'invalid_payload' });
+      return;
+    }
+
     if (status !== 'success') {
       response.status(200).json({ ok: true, skipped: true });
       return;
     }
 
-    const first = await ensureIdempotent(`webhook_${uid}`, providerReference);
+    const first = await ensureIdempotent('webhook_provider_ref', providerReference);
     if (!first) {
       response.status(200).json({ ok: true, duplicate: true });
       return;
@@ -470,9 +613,77 @@ export const paymentWebhook = onRequest(async (request, response) => {
       }, { merge: true });
     });
 
-    await createWalletTx({ walletId: uid, type: 'recharge', amount, status: 'success', reference: providerReference, traceId: crypto.randomUUID() });
+    await createWalletTx({ walletId: uid, type: 'recharge', amount, status: 'success', reference: providerReference, traceId });
+    console.info(JSON.stringify({
+      level: 'info',
+      event: 'payment_webhook_processed',
+      traceId,
+      uid,
+      providerReference,
+      amount,
+    }));
     response.status(200).json({ ok: true });
   } catch (error) {
-    response.status(500).json({ ok: false, error: 'internal_error', detail: (error as Error).message });
+    console.error(JSON.stringify({
+      level: 'error',
+      event: 'payment_webhook_error',
+      traceId,
+      message: (error as Error).message,
+    }));
+    response.status(500).json({ ok: false, error: 'internal_error' });
   }
+});
+
+export const topUpWallet = onCall(async (request) => {
+  try {
+    const uid = await ensureAuthenticated(request.auth?.uid);
+    const { amount, idempotencyKey } = request.data as { amount: number; idempotencyKey: string };
+    const traceId = crypto.randomUUID();
+    if (!idempotencyKey) throw new DomainError('ERR_DUPLICATE_IDEMPOTENCY_KEY', 'idempotencyKey requis');
+    if (!Number.isFinite(amount) || amount <= 0) throw new HttpsError('invalid-argument', 'Montant invalide');
+
+    const first = await ensureIdempotent(`topup_${uid}`, idempotencyKey);
+    if (!first) return { ok: true, duplicate: true };
+
+    const walletRef = db.collection('wallets').doc(uid);
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(walletRef);
+      const wallet = snap.data() as WalletDoc | undefined;
+      tx.set(walletRef, {
+        uid,
+        balance: (wallet?.balance ?? 0) + amount,
+        blocked: wallet?.blocked ?? 0,
+        currency: 'XAF',
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+    });
+    await createWalletTx({ walletId: uid, type: 'recharge', amount, status: 'success', reference: idempotencyKey, traceId });
+    logEvent('info', 'wallet_topup', { traceId, uid, amount });
+    return { ok: true };
+  } catch (error) {
+    asDomainError(error);
+  }
+});
+
+export const getTransactionSecretCode = onCall(async (request) => {
+  const uid = await ensureAuthenticated(request.auth?.uid);
+  const { transactionId } = request.data as { transactionId: string };
+  if (!transactionId) throw new HttpsError('invalid-argument', 'transactionId requis');
+
+  const txRef = db.collection('transactions').doc(transactionId);
+  const txSnap = await txRef.get();
+  if (!txSnap.exists) throw new HttpsError('not-found', 'Transaction introuvable');
+  const txData = txSnap.data() as TransactionDoc;
+  if (txData.buyerId !== uid) throw new HttpsError('permission-denied', 'Accès refusé');
+
+  const secretSnap = await db.collection('transaction_secrets').doc(transactionId).get();
+  if (!secretSnap.exists) throw new HttpsError('not-found', 'Code secret indisponible');
+  const secretData = secretSnap.data() as { secretCode: string; expiresAt: admin.firestore.Timestamp };
+  if (secretData.expiresAt.toMillis() < Date.now()) throw new HttpsError('failed-precondition', 'Code expiré');
+
+  return {
+    ok: true,
+    secretCode: secretData.secretCode,
+    expiresAt: secretData.expiresAt.toDate().toISOString(),
+  };
 });
