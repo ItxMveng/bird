@@ -53,6 +53,14 @@ export const api = {
   async resolveDispute(payload: { disputeId: string; resolution: 'refund' | 'pay_seller' }) {
     return post<{ result: { ok: boolean } }>('resolveDispute', payload);
   },
+
+  async topUpWallet(payload: { amount: number; idempotencyKey: string }) {
+    return post<{ result: { ok: boolean; duplicate?: boolean } }>('topUpWallet', payload);
+  },
+
+  async getTransactionSecretCode(payload: { transactionId: string }) {
+    return post<{ result: { ok: boolean; secretCode: string; expiresAt: string } }>('getTransactionSecretCode', payload);
+  },
 };
 
 export const mockData = {
