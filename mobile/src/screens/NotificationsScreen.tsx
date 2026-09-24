@@ -38,19 +38,18 @@ export function NotificationsScreen({ onBack }: { onBack: () => void }) {
 const styles = StyleSheet.create({
   summary: {
     color: palette.textMuted,
-    fontFamily: 'serif',
   },
   item: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#67e8f933',
-    backgroundColor: '#0b2237e6',
+    borderColor: '#E6DCF7',
+    backgroundColor: '#6D28D91A',
     padding: 14,
     gap: 8,
   },
   itemRead: {
     opacity: 0.72,
-    borderColor: '#334155',
+    borderColor: '#E6DCF7',
   },
   itemTop: {
     flexDirection: 'row',
@@ -61,18 +60,16 @@ const styles = StyleSheet.create({
   title: {
     color: palette.text,
     fontSize: 14,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
     flex: 1,
   },
   date: {
     color: palette.textDim,
     fontSize: 11,
-    fontFamily: 'sans-serif',
   },
   body: {
     color: palette.textMuted,
     fontSize: 12,
-    fontFamily: 'serif',
     lineHeight: 17,
   },
 });

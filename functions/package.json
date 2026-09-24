@@ -15,6 +15,10 @@
   },
   "devDependencies": {
     "typescript": "^5.7.2",
-    "@types/node": "^22.10.1"
+    "@types/node": "^22.10.1",
+    "@vercel/node": "^3.2.29"
+  },
+  "engines": {
+    "node": "20.x"
   }
 }

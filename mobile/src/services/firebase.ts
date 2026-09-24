@@ -6,12 +6,12 @@ import { getFunctions } from 'firebase/functions';
 export const USE_MOCK = process.env.EXPO_PUBLIC_USE_MOCK === '1';
 
 const rawFirebaseConfig = {
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY?.trim(),
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN?.trim(),
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY?.trim() ?? 'AIzaSyB7l52oP6vwdrcQD0-WsQnEIsphtgW-z48',
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN?.trim() ?? 'bird-af69c.firebaseapp.com',
   projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID?.trim() ?? 'bird-af69c',
-  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET?.trim(),
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID?.trim(),
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID?.trim(),
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET?.trim() ?? 'bird-af69c.firebasestorage.app',
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID?.trim() ?? '708958649347',
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID?.trim() ?? '1:708958649347:web:cea6a8248c2910cac86236',
 };
 
 const requiredFirebaseKeys: Array<keyof typeof rawFirebaseConfig> = [

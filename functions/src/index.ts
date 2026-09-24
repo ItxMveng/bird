@@ -14,9 +14,13 @@ import {
   DomainError,
 } from './domain';
 
-admin.initializeApp();
+const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
+admin.initializeApp(serviceAccount ? { credential: admin.credential.cert(JSON.parse(serviceAccount)) } : undefined);
 const db = admin.firestore();
 setGlobalOptions({ region: 'us-central1', maxInstances: 10 });
+
+const DEMO_TOPUP_MAX = 500_000;
+const DEMO_BALANCE_CAP = 2_000_000;
 
 const CONFIG = {
   commissionBps: 500,
@@ -651,6 +655,10 @@ export const topUpWallet = onCall(async (request) => {
     const { amount, idempotencyKey } = request.data as { amount: number; idempotencyKey: string };
     if (!idempotencyKey) throw new DomainError('ERR_DUPLICATE_IDEMPOTENCY_KEY', 'idempotencyKey requis');
     if (!Number.isFinite(amount) || amount <= 0) throw new HttpsError('invalid-argument', 'Montant invalide');
+    if (process.env.DEMO_MODE !== '1') {
+      throw new HttpsError('failed-precondition', 'Recharge indisponible : elle passe par le paiement mobile (webhook signé).');
+    }
+    if (amount > DEMO_TOPUP_MAX) throw new HttpsError('invalid-argument', `Recharge de démonstration limitée à ${DEMO_TOPUP_MAX} XAF`);
 
     const first = await ensureIdempotent(`topup_${uid}`, idempotencyKey);
     if (!first) return { ok: true, duplicate: true };
@@ -660,6 +668,9 @@ export const topUpWallet = onCall(async (request) => {
     await db.runTransaction(async (tx) => {
       const snap = await tx.get(walletRef);
       const wallet = snap.data() as WalletDoc | undefined;
+      if ((wallet?.balance ?? 0) + amount > DEMO_BALANCE_CAP) {
+        throw new HttpsError('failed-precondition', `Solde de démonstration plafonné à ${DEMO_BALANCE_CAP} XAF`);
+      }
       tx.set(walletRef, {
         uid,
         balance: (wallet?.balance ?? 0) + amount,

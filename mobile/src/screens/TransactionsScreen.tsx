@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   tabsRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#1f3a5b',
+    borderBottomColor: '#6D28D9',
     marginBottom: 6,
   },
   tabButton: {
@@ -87,25 +87,25 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   tabText: {
-    color: '#94a3b8',
+    color: '#6D28D9',
     fontSize: 18,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
   tabTextActive: {
-    color: '#3b82f6',
+    color: '#6D28D9',
   },
   tabUnderline: {
     width: '70%',
     height: 3,
     borderRadius: 999,
     marginTop: 8,
-    backgroundColor: '#2563eb',
+    backgroundColor: '#6D28D9',
   },
   bidCard: {
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#244566',
-    backgroundColor: '#0b2237',
+    borderColor: '#6D28D9',
+    backgroundColor: '#FFFFFF',
     padding: 12,
     gap: 10,
   },
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     height: 92,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#355577',
+    borderColor: '#E6DCF7',
   },
   cardMain: {
     flex: 1,
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     color: palette.text,
     fontSize: 18,
     flex: 1,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
   statusPill: {
     borderRadius: 999,
@@ -143,27 +143,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   statusPillOk: {
-    borderColor: '#10b981',
-    backgroundColor: '#052e2b',
+    borderColor: '#E6DCF7',
+    backgroundColor: '#D1FAE5',
   },
   statusPillWarn: {
-    borderColor: '#ef4444',
-    backgroundColor: '#3a1820',
+    borderColor: '#E6DCF7',
+    backgroundColor: '#FEE2E2',
   },
   statusText: {
     fontSize: 12,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
   statusTextOk: {
-    color: '#34d399',
+    color: '#047857',
   },
   statusTextWarn: {
-    color: '#f87171',
+    color: '#DC2626',
   },
   countdown: {
-    color: '#94a3b8',
+    color: '#6D28D9',
     fontSize: 12,
-    fontFamily: 'sans-serif',
   },
   pricesRow: {
     flexDirection: 'row',
@@ -176,28 +175,26 @@ const styles = StyleSheet.create({
   sep: {
     width: 1,
     height: 34,
-    backgroundColor: '#2d4663',
+    backgroundColor: '#FFFFFF',
     marginHorizontal: 8,
   },
   priceLabel: {
-    color: '#64748b',
+    color: '#6D28D9',
     fontSize: 11,
     textTransform: 'uppercase',
-    fontFamily: 'sans-serif',
   },
   priceValue: {
-    color: '#e2e8f0',
+    color: '#1F1A3D',
     fontSize: 15,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
   myBid: {
-    color: '#3b82f6',
+    color: '#6D28D9',
   },
   emptyText: {
     textAlign: 'center',
-    color: '#94a3b8',
+    color: '#6D28D9',
     fontSize: 13,
-    fontFamily: 'sans-serif',
     marginTop: 10,
   },
 });

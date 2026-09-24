@@ -1,258 +1,102 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { theme } from '../theme';
 
-type InteractiveSplashProps = {
-  onComplete: () => void;
-};
+type InteractiveSplashProps = { onComplete: () => void };
 
-const SPLASH_DURATION_MS = 2800;
+const SPLASH_DURATION_MS = 2200;
+
+const CHIPS: Array<{ label: string; color: string }> = [
+  { label: 'Enchères en direct', color: '#FBBF24' },
+  { label: 'Paiement en séquestre', color: '#34D399' },
+  { label: 'Code secret à la remise', color: '#38BDF8' },
+];
 
 export function InteractiveSplash({ onComplete }: InteractiveSplashProps) {
-  const logoScale = useRef(new Animated.Value(0.85)).current;
+  const logoScale = useRef(new Animated.Value(0.6)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
-  const pulse = useRef(new Animated.Value(0)).current;
-  const orbit = useRef(new Animated.Value(0)).current;
+  const float = useRef(new Animated.Value(0)).current;
   const progress = useRef(new Animated.Value(0)).current;
+  const chipAnims = useRef(CHIPS.map(() => new Animated.Value(0))).current;
 
   useEffect(() => {
-    const entryAnim = Animated.parallel([
-      Animated.spring(logoScale, {
-        toValue: 1,
-        friction: 6,
-        tension: 80,
-        useNativeDriver: true,
-      }),
-      Animated.timing(logoOpacity, {
-        toValue: 1,
-        duration: 500,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(progress, {
-        toValue: 1,
-        duration: SPLASH_DURATION_MS,
-        easing: Easing.inOut(Easing.cubic),
-        useNativeDriver: false,
-      }),
-    ]);
+    Animated.parallel([
+      Animated.spring(logoScale, { toValue: 1, friction: 5, tension: 90, useNativeDriver: true }),
+      Animated.timing(logoOpacity, { toValue: 1, duration: 420, useNativeDriver: true }),
+      Animated.timing(progress, { toValue: 1, duration: SPLASH_DURATION_MS, easing: Easing.inOut(Easing.cubic), useNativeDriver: false }),
+      Animated.stagger(
+        220,
+        chipAnims.map((v) => Animated.timing(v, { toValue: 1, duration: 380, easing: Easing.out(Easing.cubic), useNativeDriver: true })),
+      ),
+    ]).start();
 
-    const pulseLoop = Animated.loop(
+    const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, {
-          toValue: 1,
-          duration: 1300,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulse, {
-          toValue: 0,
-          duration: 1300,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
+        Animated.timing(float, { toValue: 1, duration: 1100, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(float, { toValue: 0, duration: 1100, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
       ]),
     );
-
-    const orbitLoop = Animated.loop(
-      Animated.timing(orbit, {
-        toValue: 1,
-        duration: 4200,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-    );
-
-    entryAnim.start();
-    pulseLoop.start();
-    orbitLoop.start();
-
-    const timer = setTimeout(onComplete, SPLASH_DURATION_MS + 350);
+    loop.start();
+    const timer = setTimeout(onComplete, SPLASH_DURATION_MS + 250);
     return () => {
+      loop.stop();
       clearTimeout(timer);
-      pulseLoop.stop();
-      orbitLoop.stop();
     };
-  }, [logoOpacity, logoScale, onComplete, orbit, progress, pulse]);
+  }, [chipAnims, float, logoOpacity, logoScale, onComplete, progress]);
 
-  const orbitRotate = orbit.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
-  const pulseScale = pulse.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 1.25],
-  });
-
-  const pulseOpacity = pulse.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.4, 0.1],
-  });
-
-  const progressWidth = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
-  });
-
-  const highlights = useMemo(
-    () => ['Enchères en direct', 'Connexion sécurisée', 'Paiements protégés'],
-    [],
-  );
+  const bob = float.interpolate({ inputRange: [0, 1], outputRange: [0, -10] });
+  const width = progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
 
   return (
-    <Pressable style={styles.container} onPress={onComplete}>
-      <View style={styles.bgTopGlow} />
-      <View style={styles.bgBottomGlow} />
-
-      <Animated.View style={[styles.pulseRing, { transform: [{ scale: pulseScale }], opacity: pulseOpacity }]} />
-
-      <Animated.View style={[styles.orbitWrap, { transform: [{ rotate: orbitRotate }] }]}>
-        <View style={[styles.orbitDot, styles.dotA]} />
-        <View style={[styles.orbitDot, styles.dotB]} />
-      </Animated.View>
-
-      <Animated.View style={[styles.logoCard, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}>
-        <Text style={styles.brandTag}>Bird Auction</Text>
-        <Text style={styles.brandTitle}>BIRD</Text>
-        <Text style={styles.brandSubtitle}>Acheter. Vendre. Conclure en confiance.</Text>
-      </Animated.View>
-
-      <View style={styles.featureRow}>
-        {highlights.map((item) => (
-          <View key={item} style={styles.featurePill}>
-            <Text style={styles.featureText}>{item}</Text>
+    <Pressable style={styles.flex} onPress={onComplete} accessibilityRole="button" accessibilityLabel="Passer l’introduction">
+      <LinearGradient colors={theme.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.flex}>
+        <View style={styles.blobA} />
+        <View style={styles.blobB} />
+        <View style={styles.blobC} />
+        <View style={styles.center}>
+          <Animated.View style={[styles.logo, { opacity: logoOpacity, transform: [{ scale: logoScale }, { translateY: bob }] }]}>
+            <Text style={styles.logoText}>B</Text>
+          </Animated.View>
+          <Text style={styles.brand}>Bird</Text>
+          <Text style={styles.tagline}>Achetez, vendez, concluez en confiance.</Text>
+          <View style={styles.chips}>
+            {CHIPS.map((c, i) => (
+              <Animated.View
+                key={c.label}
+                style={[styles.chip, { opacity: chipAnims[i], transform: [{ translateY: chipAnims[i].interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }] }]}
+              >
+                <View style={[styles.dot, { backgroundColor: c.color }]} />
+                <Text style={styles.chipText}>{c.label}</Text>
+              </Animated.View>
+            ))}
           </View>
-        ))}
-      </View>
-
-      <View style={styles.progressTrack}>
-        <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
-      </View>
-      <Text style={styles.skipText}>Touchez pour passer</Text>
+        </View>
+        <View style={styles.footer}>
+          <View style={styles.track}><Animated.View style={[styles.fill, { width }]} /></View>
+          <Text style={styles.skip}>Touchez pour passer</Text>
+        </View>
+      </LinearGradient>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#061423',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  bgTopGlow: {
-    position: 'absolute',
-    top: -120,
-    width: 360,
-    height: 360,
-    borderRadius: 180,
-    backgroundColor: '#0ea5a455',
-  },
-  bgBottomGlow: {
-    position: 'absolute',
-    bottom: -160,
-    width: 420,
-    height: 420,
-    borderRadius: 210,
-    backgroundColor: '#f59e0b3a',
-  },
-  pulseRing: {
-    position: 'absolute',
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    borderWidth: 1,
-    borderColor: '#22d3ee88',
-  },
-  orbitWrap: {
-    position: 'absolute',
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-  },
-  orbitDot: {
-    position: 'absolute',
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  dotA: {
-    top: 16,
-    left: 154,
-    backgroundColor: '#22d3ee',
-  },
-  dotB: {
-    bottom: 18,
-    right: 120,
-    backgroundColor: '#f59e0b',
-  },
-  logoCard: {
-    width: '100%',
-    borderRadius: 22,
-    paddingVertical: 28,
-    paddingHorizontal: 22,
-    backgroundColor: '#0b22368c',
-    borderWidth: 1,
-    borderColor: '#67e8f933',
-    alignItems: 'center',
-    gap: 8,
-  },
-  brandTag: {
-    color: '#67e8f9',
-    letterSpacing: 2,
-    fontSize: 12,
-    textTransform: 'uppercase',
-    fontFamily: 'sans-serif-condensed',
-  },
-  brandTitle: {
-    color: '#f8fafc',
-    fontSize: 44,
-    letterSpacing: 5,
-    fontFamily: 'sans-serif-medium',
-  },
-  brandSubtitle: {
-    color: '#cbd5e1',
-    fontSize: 14,
-    textAlign: 'center',
-    fontFamily: 'serif',
-  },
-  featureRow: {
-    width: '100%',
-    marginTop: 26,
-    gap: 8,
-  },
-  featurePill: {
-    alignSelf: 'center',
-    borderRadius: 999,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    backgroundColor: '#0f2f48cc',
-    borderWidth: 1,
-    borderColor: '#67e8f933',
-  },
-  featureText: {
-    color: '#dbeafe',
-    fontSize: 12,
-    fontFamily: 'sans-serif',
-  },
-  progressTrack: {
-    width: '100%',
-    marginTop: 26,
-    height: 8,
-    borderRadius: 999,
-    overflow: 'hidden',
-    backgroundColor: '#1e293b',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 999,
-    backgroundColor: '#14b8a6',
-  },
-  skipText: {
-    marginTop: 14,
-    color: '#94a3b8',
-    fontSize: 12,
-    fontFamily: 'sans-serif-light',
-  },
+  flex: { flex: 1 },
+  blobA: { position: 'absolute', top: -90, right: -70, width: 280, height: 280, borderRadius: 140, backgroundColor: '#FFFFFF22' },
+  blobB: { position: 'absolute', bottom: 120, left: -90, width: 230, height: 230, borderRadius: 115, backgroundColor: '#FBBF2433' },
+  blobC: { position: 'absolute', bottom: -60, right: -40, width: 200, height: 200, borderRadius: 100, backgroundColor: '#38BDF833' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28, gap: 10 },
+  logo: { width: 110, height: 110, borderRadius: 36, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', ...theme.shadow, shadowOpacity: 0.3 },
+  logoText: { color: theme.primary, fontSize: 64, fontWeight: '900' },
+  brand: { color: '#fff', fontSize: 52, fontWeight: '900', letterSpacing: -1.5, marginTop: 8 },
+  tagline: { color: '#FFFFFFEE', fontSize: 16, textAlign: 'center' },
+  chips: { marginTop: 22, gap: 10, alignItems: 'center' },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFFFFF2E', borderRadius: 999, paddingHorizontal: 18, paddingVertical: 10 },
+  dot: { width: 10, height: 10, borderRadius: 5 },
+  chipText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  footer: { paddingHorizontal: 40, paddingBottom: 44, alignItems: 'center', gap: 10 },
+  track: { height: 6, alignSelf: 'stretch', backgroundColor: '#FFFFFF33', borderRadius: 3, overflow: 'hidden' },
+  fill: { height: 6, backgroundColor: '#fff', borderRadius: 3 },
+  skip: { color: '#FFFFFFCC', fontSize: 12 },
 });

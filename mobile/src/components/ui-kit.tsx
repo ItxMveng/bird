@@ -6,6 +6,7 @@ import {
   Pressable,
   SafeAreaView,
   ScrollView,
+  StatusBar,
   StyleProp,
   StyleSheet,
   Text,
@@ -14,20 +15,25 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { theme } from '../theme';
 
 export const palette = {
-  bg: '#051423',
-  panel: '#0b2237e6',
-  panelSoft: '#102b42',
-  line: '#334155',
-  text: '#f8fafc',
-  textMuted: '#cbd5e1',
-  textDim: '#94a3b8',
-  teal: '#14b8a6',
-  tealSoft: '#67e8f9',
-  amber: '#f59e0b',
-  danger: '#f87171',
-  success: '#34d399',
+  bg: theme.bg,
+  panel: theme.surface,
+  panelSoft: theme.soft,
+  line: theme.line,
+  text: theme.ink,
+  textMuted: theme.muted,
+  textDim: theme.dim,
+  teal: theme.primary,
+  tealSoft: theme.primary,
+  amber: '#D97706',
+  danger: theme.danger,
+  success: '#047857',
+  primary: theme.primary,
+  pink: theme.pink,
+  orange: theme.orange,
 };
 
 type BirdScreenProps = {
@@ -39,56 +45,43 @@ type BirdScreenProps = {
   onRightAction?: () => void;
 };
 
-export function BirdScreen({
-  title,
-  subtitle,
-  children,
-  onBack,
-  rightActionLabel,
-  onRightAction,
-}: BirdScreenProps) {
+export function BirdScreen({ title, subtitle, children, onBack, rightActionLabel, onRightAction }: BirdScreenProps) {
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.bgTopGlow} />
-      <View style={styles.bgBottomGlow} />
-
-      <KeyboardAvoidingView style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.header}>
-          {onBack ? (
-            <Pressable style={styles.headerBtn} onPress={onBack}>
-              <Text style={styles.headerBtnText}>Retour</Text>
-            </Pressable>
-          ) : (
-            <View style={styles.headerBtnGhost} />
-          )}
-
-          <View style={styles.headerTitleWrap}>
-            <Text style={styles.title}>{title}</Text>
-            {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+    <View style={styles.safe}>
+      <StatusBar barStyle="light-content" />
+      <LinearGradient colors={theme.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
+        <View style={styles.blobA} />
+        <View style={styles.blobB} />
+        <SafeAreaView>
+          <View style={styles.heroRow}>
+            {onBack ? (
+              <Pressable style={styles.backBtn} onPress={onBack} accessibilityRole="button" accessibilityLabel="Retour">
+                <Text style={styles.backText}>‹</Text>
+              </Pressable>
+            ) : null}
+            <View style={styles.heroTitleWrap}>
+              <Text style={styles.title} numberOfLines={1}>{title}</Text>
+              {subtitle ? <Text style={styles.subtitle} numberOfLines={2}>{subtitle}</Text> : null}
+            </View>
+            {onRightAction && rightActionLabel ? (
+              <Pressable style={styles.rightBtn} onPress={onRightAction}>
+                <Text style={styles.rightBtnText}>{rightActionLabel}</Text>
+              </Pressable>
+            ) : null}
           </View>
+        </SafeAreaView>
+      </LinearGradient>
 
-          {onRightAction && rightActionLabel ? (
-            <Pressable style={styles.headerBtn} onPress={onRightAction}>
-              <Text style={styles.headerBtnText}>{rightActionLabel}</Text>
-            </Pressable>
-          ) : (
-            <View style={styles.headerBtnGhost} />
-          )}
-        </View>
-
-        <ScrollView contentContainerStyle={styles.content}>{children}</ScrollView>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          {children}
+        </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
-export function BirdCard({
-  children,
-  style,
-}: {
-  children: React.ReactNode;
-  style?: StyleProp<ViewStyle>;
-}) {
+export function BirdCard({ children, style }: { children: React.ReactNode; style?: StyleProp<ViewStyle> }) {
   return <View style={[styles.card, style]}>{children}</View>;
 }
 
@@ -102,82 +95,50 @@ type BirdButtonProps = {
   variant?: BirdButtonVariant;
 };
 
-export function BirdButton({
-  label,
-  onPress,
-  disabled = false,
-  loading = false,
-  variant = 'primary',
-}: BirdButtonProps) {
-  const styleByVariant: Record<BirdButtonVariant, ViewStyle> = {
-    primary: styles.btnPrimary,
-    secondary: styles.btnSecondary,
-    ghost: styles.btnGhost,
-    danger: styles.btnDanger,
-  };
+export function BirdButton({ label, onPress, disabled = false, loading = false, variant = 'primary' }: BirdButtonProps) {
+  const inner = loading ? (
+    <ActivityIndicator color={variant === 'primary' ? '#fff' : theme.primary} />
+  ) : (
+    <Text style={[styles.buttonText, variantText[variant]]}>{label}</Text>
+  );
+  const common = { disabled: disabled || loading, onPress, accessibilityRole: 'button' as const, accessibilityLabel: label };
 
-  const textByVariant: Record<BirdButtonVariant, object> = {
-    primary: styles.btnPrimaryText,
-    secondary: styles.btnSecondaryText,
-    ghost: styles.btnGhostText,
-    danger: styles.btnDangerText,
-  };
-
+  if (variant === 'primary') {
+    return (
+      <Pressable {...common} style={({ pressed }) => [styles.buttonWrap, disabled ? styles.buttonDisabled : undefined, pressed ? styles.pressed : undefined]}>
+        <LinearGradient colors={theme.gradientSoft} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.button}>
+          {inner}
+        </LinearGradient>
+      </Pressable>
+    );
+  }
   return (
-    <Pressable
-      style={[styles.button, styleByVariant[variant], disabled ? styles.buttonDisabled : undefined]}
-      disabled={disabled || loading}
-      onPress={onPress}
-    >
-      {loading ? (
-        <ActivityIndicator color={variant === 'ghost' ? palette.tealSoft : palette.bg} />
-      ) : (
-        <Text style={[styles.buttonText, textByVariant[variant]]}>{label}</Text>
-      )}
+    <Pressable {...common} style={({ pressed }) => [styles.button, styles.buttonWrap, variantBox[variant], disabled ? styles.buttonDisabled : undefined, pressed ? styles.pressed : undefined]}>
+      {inner}
     </Pressable>
   );
 }
 
-type BirdInputProps = TextInputProps & {
-  label?: string;
-  error?: string;
-};
+type BirdInputProps = TextInputProps & { label?: string; error?: string };
 
 export function BirdInput({ label, error, style, ...props }: BirdInputProps) {
   return (
     <View style={styles.inputWrap}>
       {label ? <Text style={styles.inputLabel}>{label}</Text> : null}
-      <TextInput
-        {...props}
-        placeholderTextColor={palette.textDim}
-        style={[styles.input, style]}
-      />
+      <TextInput {...props} placeholderTextColor={theme.dim} style={[styles.input, error ? styles.inputErr : undefined, style]} />
       {error ? <Text style={styles.inputError}>{error}</Text> : null}
     </View>
   );
 }
 
-export function BirdTag({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected?: boolean;
-  onPress?: () => void;
-}) {
+export function BirdTag({ label, selected, onPress }: { label: string; selected?: boolean; onPress?: () => void }) {
   const content = (
     <View style={[styles.tag, selected ? styles.tagActive : undefined]}>
       <Text style={[styles.tagText, selected ? styles.tagTextActive : undefined]}>{label}</Text>
     </View>
   );
-
   if (!onPress) return content;
-  return (
-    <Pressable onPress={onPress}>
-      {content}
-    </Pressable>
-  );
+  return <Pressable onPress={onPress}>{content}</Pressable>;
 }
 
 export function SectionTitle({ children }: { children: React.ReactNode }) {
@@ -185,177 +146,72 @@ export function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: palette.bg,
+  flex: { flex: 1 },
+  safe: { flex: 1, backgroundColor: theme.bg },
+  hero: {
+    paddingHorizontal: 18,
+    paddingTop: Platform.OS === 'android' ? 34 : 14,
+    paddingBottom: 30,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    overflow: 'hidden',
   },
-  bgTopGlow: {
-    position: 'absolute',
-    top: -120,
-    left: -60,
-    width: 300,
-    height: 300,
-    borderRadius: 160,
-    backgroundColor: '#14b8a644',
-  },
-  bgBottomGlow: {
-    position: 'absolute',
-    bottom: -160,
-    right: -40,
-    width: 360,
-    height: 360,
-    borderRadius: 180,
-    backgroundColor: '#f59e0b2e',
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 6,
-    paddingBottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  headerBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#67e8f944',
-    backgroundColor: '#0f2f48cc',
-    minWidth: 72,
-    alignItems: 'center',
-  },
-  headerBtnGhost: {
-    minWidth: 72,
-  },
-  headerBtnText: {
-    color: palette.tealSoft,
-    fontSize: 12,
-    fontFamily: 'sans-serif-medium',
-  },
-  headerTitleWrap: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  title: {
-    color: palette.text,
-    fontSize: 19,
-    fontFamily: 'sans-serif-medium',
-    textAlign: 'center',
-  },
-  subtitle: {
-    marginTop: 2,
-    color: palette.textDim,
-    fontSize: 12,
-    textAlign: 'center',
-    fontFamily: 'serif',
-  },
-  content: {
-    paddingHorizontal: 16,
-    paddingBottom: 24,
-    gap: 12,
-  },
+  blobA: { position: 'absolute', top: -60, right: -40, width: 190, height: 190, borderRadius: 95, backgroundColor: '#FFFFFF22' },
+  blobB: { position: 'absolute', bottom: -70, left: -30, width: 150, height: 150, borderRadius: 75, backgroundColor: '#FBBF2433' },
+  heroRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 8 },
+  heroTitleWrap: { flex: 1 },
+  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFFFF33', alignItems: 'center', justifyContent: 'center' },
+  backText: { color: '#fff', fontSize: 28, lineHeight: 30, fontWeight: '600' },
+  title: { color: '#fff', fontSize: 26, fontWeight: '800', letterSpacing: -0.4 },
+  subtitle: { marginTop: 3, color: '#FFFFFFDD', fontSize: 13.5, lineHeight: 18 },
+  rightBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: '#FFFFFF33' },
+  rightBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  content: { paddingHorizontal: 16, paddingTop: 18, paddingBottom: 120, gap: 14 },
   card: {
-    borderRadius: 16,
+    borderRadius: 22,
+    backgroundColor: theme.surface,
+    padding: 16,
+    gap: 10,
     borderWidth: 1,
-    borderColor: '#67e8f933',
-    backgroundColor: palette.panel,
-    padding: 14,
-    gap: 8,
+    borderColor: theme.line,
+    ...theme.shadow,
   },
-  button: {
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    alignItems: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.55,
-  },
-  buttonText: {
-    fontSize: 14,
-    fontFamily: 'sans-serif-medium',
-  },
-  btnPrimary: {
-    backgroundColor: palette.teal,
-  },
-  btnPrimaryText: {
-    color: '#062023',
-  },
-  btnSecondary: {
-    backgroundColor: '#22d3ee2b',
-    borderWidth: 1,
-    borderColor: '#67e8f955',
-  },
-  btnSecondaryText: {
-    color: '#cffafe',
-  },
-  btnGhost: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: palette.line,
-  },
-  btnGhostText: {
-    color: palette.textMuted,
-  },
-  btnDanger: {
-    backgroundColor: '#7f1d1d',
-    borderWidth: 1,
-    borderColor: '#f87171',
-  },
-  btnDangerText: {
-    color: '#fee2e2',
-  },
-  inputWrap: {
-    gap: 5,
-  },
-  inputLabel: {
-    color: palette.textMuted,
-    fontSize: 12,
-    fontFamily: 'sans-serif-medium',
-  },
+  buttonWrap: { borderRadius: 16, overflow: 'hidden' },
+  button: { borderRadius: 16, paddingVertical: 14, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', minHeight: 48 },
+  buttonDisabled: { opacity: 0.5 },
+  pressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
+  buttonText: { fontSize: 15, fontWeight: '700' },
+  inputWrap: { gap: 6 },
+  inputLabel: { color: theme.muted, fontSize: 12.5, fontWeight: '700' },
   input: {
-    borderWidth: 1,
-    borderColor: palette.line,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    color: palette.text,
-    backgroundColor: palette.panelSoft,
+    borderWidth: 1.5,
+    borderColor: theme.line,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    color: theme.ink,
+    backgroundColor: theme.soft,
     fontSize: 15,
   },
-  inputError: {
-    color: palette.danger,
-    fontSize: 12,
-    fontFamily: 'sans-serif',
-  },
-  tag: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: palette.line,
-    backgroundColor: '#0f2740',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  tagActive: {
-    borderColor: '#67e8f988',
-    backgroundColor: '#22d3ee2d',
-  },
-  tagText: {
-    color: '#94a3b8',
-    fontSize: 12,
-    textTransform: 'capitalize',
-    fontFamily: 'sans-serif',
-  },
-  tagTextActive: {
-    color: '#ecfeff',
-    fontFamily: 'sans-serif-medium',
-  },
-  sectionTitle: {
-    color: palette.text,
-    fontSize: 17,
-    fontFamily: 'sans-serif-medium',
-    marginBottom: 4,
-  },
+  inputErr: { borderColor: theme.danger },
+  inputError: { color: theme.danger, fontSize: 12 },
+  tag: { borderRadius: 999, borderWidth: 1.5, borderColor: theme.line, backgroundColor: theme.surface, paddingHorizontal: 14, paddingVertical: 8 },
+  tagActive: { borderColor: theme.primary, backgroundColor: theme.primary },
+  tagText: { color: theme.muted, fontSize: 13, fontWeight: '600', textTransform: 'capitalize' },
+  tagTextActive: { color: '#fff' },
+  sectionTitle: { color: theme.ink, fontSize: 18, fontWeight: '800', marginBottom: 2 },
 });
+
+const variantText: Record<BirdButtonVariant, object> = {
+  primary: { color: '#fff' },
+  secondary: { color: theme.primary },
+  ghost: { color: theme.muted },
+  danger: { color: theme.danger },
+};
+
+const variantBox: Record<BirdButtonVariant, ViewStyle> = {
+  primary: {},
+  secondary: { backgroundColor: theme.soft, borderWidth: 1.5, borderColor: theme.line },
+  ghost: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: theme.line },
+  danger: { backgroundColor: '#FEE2E2', borderWidth: 1.5, borderColor: '#FCA5A5' },
+};

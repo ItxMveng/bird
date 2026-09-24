@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { AppDataProvider } from './src/context/AppDataContext';
-import { palette } from './src/components/ui-kit';
 import { InteractiveSplash } from './src/components/InteractiveSplash';
 import { AdminDashboardScreen } from './src/screens/AdminDashboardScreen';
 import { AuctionDetailScreen } from './src/screens/AuctionDetailScreen';
@@ -20,6 +20,7 @@ import { TransactionDetailScreen } from './src/screens/TransactionDetailScreen';
 import { TransactionsScreen } from './src/screens/TransactionsScreen';
 import { WalletScreen } from './src/screens/WalletScreen';
 import { Auction, MessageThread, Transaction } from './src/types';
+import { theme } from './src/theme';
 
 type Route =
   | 'home'
@@ -37,6 +38,8 @@ type Route =
   | 'ratings'
   | 'admin';
 
+const DETAIL_ROUTES: Route[] = ['auction', 'transactionDetail', 'dispute', 'conversation', 'create'];
+
 function AppInner() {
   const { user, step, logout } = useAuth();
   const [showSplash, setShowSplash] = useState(true);
@@ -44,36 +47,33 @@ function AppInner() {
   const [selectedAuction, setSelectedAuction] = useState<Auction | null>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [selectedThread, setSelectedThread] = useState<MessageThread | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const drawerTranslate = useRef(new Animated.Value(-280)).current;
-
-  useEffect(() => {
-    Animated.timing(drawerTranslate, {
-      toValue: drawerOpen ? 0 : -280,
-      duration: 210,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
-  }, [drawerOpen, drawerTranslate]);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   if (showSplash) return <InteractiveSplash onComplete={() => setShowSplash(false)} />;
   if (!user || step !== 'authenticated') return <LoginScreen />;
 
-  const mainNav: Array<{ label: string; route: Route }> = [
-    { label: 'Accueil', route: 'home' },
-    { label: 'Explorer', route: 'search' },
-    { label: 'Messages', route: 'messages' },
-    { label: 'Mes mises', route: 'transactions' },
-    { label: 'Profil', route: 'profile' },
-  ];
-
   const goTo = (next: Route) => {
     setRoute(next);
-    setDrawerOpen(false);
+    setMoreOpen(false);
   };
+  const showTabs = !DETAIL_ROUTES.includes(route);
 
-  const detailRoutes: Route[] = ['auction', 'transactionDetail', 'dispute', 'conversation'];
-  const showSidebarToggle = !detailRoutes.includes(route);
+  const tabs: Array<{ label: string; glyph: string; route: Route | 'more' }> = [
+    { label: 'Accueil', glyph: '⌂', route: 'home' },
+    { label: 'Explorer', glyph: '⌕', route: 'search' },
+    { label: 'Vendre', glyph: '+', route: 'create' },
+    { label: 'Mes mises', glyph: '◎', route: 'transactions' },
+    { label: 'Plus', glyph: '≡', route: 'more' },
+  ];
+
+  const moreItems: Array<{ label: string; route: Route }> = [
+    { label: 'Messages', route: 'messages' },
+    { label: 'Portefeuille', route: 'wallet' },
+    { label: 'Notifications', route: 'notifications' },
+    { label: 'Avis reçus', route: 'ratings' },
+    { label: 'Mon profil', route: 'profile' },
+    { label: 'Administration', route: 'admin' },
+  ];
 
   return (
     <View style={styles.appRoot}>
@@ -114,58 +114,76 @@ function AppInner() {
       )}
       {route === 'dispute' && selectedTransaction && <DisputeScreen transaction={selectedTransaction} onBack={() => setRoute('transactionDetail')} />}
       {route === 'profile' && <ProfileScreen onBack={() => setRoute('home')} />}
-      {route === 'search' && <SearchScreen onBack={() => setRoute('home')} onOpenAuction={(a) => { setSelectedAuction(a); setRoute('auction'); }} />}
+      {route === 'search' && (
+        <SearchScreen
+          onBack={() => setRoute('home')}
+          onOpenAuction={(a) => {
+            setSelectedAuction(a);
+            setRoute('auction');
+          }}
+        />
+      )}
       {route === 'notifications' && <NotificationsScreen onBack={() => setRoute('home')} />}
-      {route === 'messages' && <MessagesScreen onBack={() => setRoute('home')} onOpenThread={(th) => { setSelectedThread(th); setRoute('conversation'); }} />}
+      {route === 'messages' && (
+        <MessagesScreen
+          onBack={() => setRoute('home')}
+          onOpenThread={(th) => {
+            setSelectedThread(th);
+            setRoute('conversation');
+          }}
+        />
+      )}
       {route === 'conversation' && selectedThread && <ConversationScreen thread={selectedThread} onBack={() => setRoute('messages')} />}
       {route === 'ratings' && <RatingsScreen onBack={() => setRoute('home')} />}
       {route === 'admin' && <AdminDashboardScreen onBack={() => setRoute('home')} />}
 
-      {showSidebarToggle ? (
-        <View style={styles.sideControls}>
-          <Pressable style={styles.hamburgerButton} onPress={() => setDrawerOpen((v) => !v)}>
-            <Text style={styles.hamburgerText}>{drawerOpen ? 'X' : '≡'}</Text>
-          </Pressable>
-        </View>
-      ) : null}
-
-      {drawerOpen ? <Pressable style={styles.drawerBackdrop} onPress={() => setDrawerOpen(false)} /> : null}
-
-      <Animated.View style={[styles.drawerPanel, { transform: [{ translateX: drawerTranslate }] }]}>
-        <Text style={styles.drawerTitle}>Navigation</Text>
-        <Text style={styles.drawerUser}>{user?.name ?? user?.email ?? 'Compte'}</Text>
-
-        <ScrollView contentContainerStyle={styles.drawerScroll} showsVerticalScrollIndicator={false}>
-          <Text style={styles.groupTitle}>Principal</Text>
-          {mainNav.map((item) => {
-            const active = route === item.route;
-            return (
-              <Pressable key={item.route} style={[styles.drawerItem, active ? styles.drawerItemActive : undefined]} onPress={() => goTo(item.route)}>
-                <Text style={[styles.drawerItemText, active ? styles.drawerItemTextActive : undefined]}>{item.label}</Text>
-              </Pressable>
-            );
-          })}
-
-          <Text style={styles.groupTitle}>Accès rapide</Text>
-          <View style={styles.quickTools}>
-            <Pressable style={[styles.quickToolBtn, route === 'create' ? styles.quickToolBtnActive : undefined]} onPress={() => goTo('create')}>
-              <Text style={styles.quickToolText}>Créer</Text>
-            </Pressable>
-            <Pressable style={[styles.quickToolBtn, route === 'wallet' ? styles.quickToolBtnActive : undefined]} onPress={() => goTo('wallet')}>
-              <Text style={styles.quickToolText}>Wallet</Text>
-            </Pressable>
-            <Pressable style={[styles.quickToolBtn, route === 'admin' ? styles.quickToolBtnActive : undefined]} onPress={() => goTo('admin')}>
-              <Text style={styles.quickToolText}>Admin</Text>
-            </Pressable>
+      {showTabs && (
+        <View style={styles.tabBarWrap} pointerEvents="box-none">
+          <View style={styles.tabBar}>
+            {tabs.map((t) => {
+              const active = t.route === route;
+              const isFab = t.route === 'create';
+              return (
+                <Pressable
+                  key={t.label}
+                  style={styles.tab}
+                  onPress={() => (t.route === 'more' ? setMoreOpen(true) : goTo(t.route))}
+                  accessibilityRole="button"
+                  accessibilityLabel={t.label}
+                  accessibilityState={{ selected: active }}
+                >
+                  {isFab ? (
+                    <LinearGradient colors={theme.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.fab}>
+                      <Text style={styles.fabGlyph}>+</Text>
+                    </LinearGradient>
+                  ) : (
+                    <Text style={[styles.glyph, active && styles.glyphActive]}>{t.glyph}</Text>
+                  )}
+                  <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{t.label}</Text>
+                </Pressable>
+              );
+            })}
           </View>
-        </ScrollView>
+        </View>
+      )}
 
-        <Pressable style={styles.logoutBtn} onPress={logout}>
-          <Text style={styles.logoutText}>Se déconnecter</Text>
+      <Modal visible={moreOpen} transparent animationType="fade" onRequestClose={() => setMoreOpen(false)}>
+        <Pressable style={styles.sheetBackdrop} onPress={() => setMoreOpen(false)}>
+          <Pressable style={styles.sheet} onPress={() => undefined}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>{user.name ?? user.email ?? 'Mon compte'}</Text>
+            {moreItems.map((item) => (
+              <Pressable key={item.route} style={styles.sheetItem} onPress={() => goTo(item.route)}>
+                <Text style={styles.sheetItemText}>{item.label}</Text>
+                <Text style={styles.sheetChevron}>›</Text>
+              </Pressable>
+            ))}
+            <Pressable style={[styles.sheetItem, styles.logout]} onPress={() => { setMoreOpen(false); logout(); }}>
+              <Text style={[styles.sheetItemText, { color: theme.danger }]}>Se déconnecter</Text>
+            </Pressable>
+          </Pressable>
         </Pressable>
-      </Animated.View>
-
-      <StatusBar barStyle="light-content" backgroundColor={palette.bg} />
+      </Modal>
     </View>
   );
 }
@@ -181,130 +199,34 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  appRoot: { flex: 1, backgroundColor: palette.bg },
-  sideControls: {
-    position: 'absolute',
-    top: 46,
-    left: 12,
-    zIndex: 12,
-  },
-  hamburgerButton: {
-    height: 40,
-    width: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#274466',
-    backgroundColor: '#0b1f36ef',
-  },
-  hamburgerText: {
-    color: '#e2e8f0',
-    fontSize: 21,
-    lineHeight: 22,
-    fontFamily: 'sans-serif-medium',
-  },
-  drawerBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 10,
-    backgroundColor: '#00000066',
-  },
-  drawerPanel: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    bottom: 0,
-    width: 270,
-    backgroundColor: '#071728',
-    borderRightWidth: 1,
-    borderRightColor: '#1d395a',
-    zIndex: 11,
-    paddingTop: 58,
-    paddingHorizontal: 12,
-    paddingBottom: 18,
-  },
-  drawerTitle: {
-    color: '#f8fafc',
-    fontSize: 23,
-    fontFamily: 'sans-serif-medium',
-  },
-  drawerUser: {
-    color: '#94a3b8',
-    fontSize: 12,
-    marginTop: 3,
-    marginBottom: 10,
-    fontFamily: 'sans-serif',
-  },
-  drawerScroll: {
-    gap: 7,
-    paddingBottom: 10,
-  },
-  groupTitle: {
-    color: '#60a5fa',
-    fontSize: 11,
-    marginTop: 8,
-    marginBottom: 3,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    fontFamily: 'sans-serif-medium',
-  },
-  drawerItem: {
-    borderRadius: 11,
-    borderWidth: 1,
-    borderColor: '#334155',
-    backgroundColor: '#0e2842',
-    minHeight: 42,
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-  },
-  drawerItemActive: {
-    borderColor: '#3b82f6',
-    backgroundColor: '#1e40af33',
-  },
-  drawerItemText: {
-    color: '#cbd5e1',
-    fontSize: 13,
-    fontFamily: 'sans-serif',
-  },
-  drawerItemTextActive: {
-    color: '#dbeafe',
-    fontFamily: 'sans-serif-medium',
-  },
-  quickTools: {
+  appRoot: { flex: 1, backgroundColor: theme.bg, ...(Platform.OS === 'web' ? { maxWidth: 560, width: '100%', alignSelf: 'center' } : null) },
+  tabBarWrap: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 12, paddingBottom: Platform.OS === 'ios' ? 20 : 10 },
+  tabBar: {
     flexDirection: 'row',
-    gap: 8,
-  },
-  quickToolBtn: {
-    flex: 1,
-    minHeight: 38,
-    borderRadius: 10,
+    alignItems: 'flex-end',
+    backgroundColor: '#fff',
+    borderRadius: 28,
+    paddingHorizontal: 6,
+    paddingTop: 8,
+    paddingBottom: 8,
     borderWidth: 1,
-    borderColor: '#334155',
-    backgroundColor: '#0b2237',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderColor: theme.line,
+    ...theme.shadow,
+    shadowOpacity: 0.22,
   },
-  quickToolBtnActive: {
-    borderColor: '#3b82f6',
-    backgroundColor: '#1e40af33',
-  },
-  quickToolText: {
-    color: '#cbd5e1',
-    fontSize: 12,
-    fontFamily: 'sans-serif-medium',
-  },
-  logoutBtn: {
-    marginTop: 10,
-    borderRadius: 11,
-    backgroundColor: '#7f1d1d',
-    borderWidth: 1,
-    borderColor: '#ef4444',
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  logoutText: {
-    color: '#fee2e2',
-    fontSize: 13,
-    fontFamily: 'sans-serif-medium',
-  },
+  tab: { flex: 1, alignItems: 'center', gap: 2, minHeight: 46, justifyContent: 'flex-end' },
+  glyph: { fontSize: 24, color: theme.dim, lineHeight: 26 },
+  glyphActive: { color: theme.primary },
+  tabLabel: { fontSize: 10.5, color: theme.dim, fontWeight: '700' },
+  tabLabelActive: { color: theme.primary },
+  fab: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', marginTop: -30, borderWidth: 4, borderColor: '#fff' },
+  fabGlyph: { color: '#fff', fontSize: 30, fontWeight: '700', lineHeight: 32 },
+  sheetBackdrop: { flex: 1, backgroundColor: '#1F1A3D88', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, paddingBottom: 30, gap: 4, maxWidth: 560, width: '100%', alignSelf: 'center' },
+  sheetHandle: { alignSelf: 'center', width: 44, height: 5, borderRadius: 3, backgroundColor: theme.line, marginBottom: 10 },
+  sheetTitle: { color: theme.ink, fontWeight: '900', fontSize: 18, marginBottom: 6 },
+  sheetItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: theme.line },
+  sheetItemText: { color: theme.ink, fontWeight: '700', fontSize: 15.5 },
+  sheetChevron: { color: theme.dim, fontSize: 22 },
+  logout: { borderBottomWidth: 0, marginTop: 4 },
 });

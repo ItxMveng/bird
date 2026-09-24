@@ -120,19 +120,19 @@ export function WalletScreen({ onBack }: { onBack: () => void }) {
 
 const styles = StyleSheet.create({
   balanceCard: {
-    borderColor: '#2563eb55',
-    backgroundColor: '#1f55d4',
+    borderColor: '#E6DCF7',
+    backgroundColor: '#FFFFFF',
     gap: 10,
   },
   balanceLabel: {
-    color: '#bfdbfe',
+    color: '#5B5680',
     fontSize: 13,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
   balanceValue: {
-    color: '#eff6ff',
+    color: '#1F1A3D',
     fontSize: 34,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
   balanceDivider: {
     height: 1,
@@ -147,19 +147,18 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   balanceStatLabel: {
-    color: '#dbeafe',
+    color: '#1F1A3D',
     fontSize: 11,
-    fontFamily: 'sans-serif',
   },
   balanceStatValue: {
-    color: '#f8fafc',
+    color: '#1F1A3D',
     fontSize: 22,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
   blockTitle: {
     color: palette.text,
     fontSize: 20,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
   providerRow: {
     flexDirection: 'row',
@@ -170,22 +169,22 @@ const styles = StyleSheet.create({
     minHeight: 40,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#2f4763',
-    backgroundColor: '#0d2238',
+    borderColor: '#E6DCF7',
+    backgroundColor: '#F5F0FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   providerBtnActive: {
-    borderColor: '#2563eb',
-    backgroundColor: '#1d3f66',
+    borderColor: '#6D28D9',
+    backgroundColor: '#6D28D9',
   },
   providerText: {
-    color: '#9fb0c7',
+    color: '#6D28D9',
     fontSize: 13,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
   providerTextActive: {
-    color: '#dbeafe',
+    color: '#FFFFFF',
   },
   sectionRow: {
     flexDirection: 'row',
@@ -195,7 +194,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: palette.text,
     fontSize: 20,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
   activitiesColumn: {
     gap: 10,
@@ -203,8 +202,8 @@ const styles = StyleSheet.create({
   activityCard: {
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#274466',
-    backgroundColor: '#0b2237',
+    borderColor: '#6D28D9',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
     paddingVertical: 12,
     flexDirection: 'row',
@@ -216,14 +215,13 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   activityTitle: {
-    color: '#e2e8f0',
+    color: '#1F1A3D',
     fontSize: 16,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
   activityMeta: {
-    color: '#64748b',
+    color: '#6D28D9',
     fontSize: 12,
-    fontFamily: 'sans-serif',
   },
   activityRight: {
     alignItems: 'flex-end',
@@ -231,30 +229,30 @@ const styles = StyleSheet.create({
   },
   activityAmount: {
     fontSize: 19,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
   amountIn: {
-    color: '#34d399',
+    color: '#047857',
   },
   amountOut: {
-    color: '#cbd5e1',
+    color: '#1F1A3D',
   },
   statusPill: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#3b82f666',
-    backgroundColor: '#1d3f66',
-    color: '#93c5fd',
+    borderColor: '#E6DCF7',
+    backgroundColor: '#F5F0FF',
+    color: '#6D28D9',
     fontSize: 11,
     paddingHorizontal: 8,
     paddingVertical: 3,
     textTransform: 'uppercase',
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
   feedback: {
     color: palette.textMuted,
     fontSize: 12,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
 });
 

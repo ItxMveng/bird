@@ -80,29 +80,27 @@ const styles = StyleSheet.create({
   },
   feedback: {
     color: palette.textMuted,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
     fontSize: 12,
   },
   empty: {
     color: palette.textDim,
-    fontFamily: 'serif',
   },
   ratingRow: {
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#67e8f922',
-    backgroundColor: '#0f2f48cc',
+    borderColor: '#E6DCF7',
+    backgroundColor: '#6D28D91A',
     padding: 10,
     gap: 4,
   },
   ratingScore: {
-    color: '#fbbf24',
+    color: '#B45309',
     fontSize: 13,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
   ratingComment: {
     color: palette.textMuted,
     fontSize: 12,
-    fontFamily: 'serif',
   },
 });

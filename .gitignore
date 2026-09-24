@@ -32,3 +32,7 @@ desktop.ini
 # Fichiers de cache
 *.cache
 *.tmp
+# Expo
+mobile/dist/
+mobile/.expo/
+*.log

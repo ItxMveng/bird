@@ -51,18 +51,17 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   price: {
-    color: '#99f6e4',
+    color: '#6D28D9',
     fontSize: 22,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
   perk: {
     color: palette.textMuted,
     fontSize: 13,
-    fontFamily: 'serif',
   },
   feedback: {
     color: palette.textMuted,
     fontSize: 12,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
 });

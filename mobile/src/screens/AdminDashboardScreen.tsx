@@ -121,43 +121,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statTitle: {
-    color: '#94a3b8',
+    color: '#6D28D9',
     fontSize: 16,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
   trend: {
     fontSize: 14,
     borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
   trendUp: {
-    color: '#4ade80',
-    backgroundColor: '#052e2b',
+    color: '#047857',
+    backgroundColor: '#D1FAE5',
   },
   trendWarn: {
-    color: '#fb7185',
-    backgroundColor: '#3a1820',
+    color: '#DC2626',
+    backgroundColor: '#FEE2E2',
   },
   trendGood: {
-    color: '#34d399',
-    backgroundColor: '#064e3b',
+    color: '#047857',
+    backgroundColor: '#D1FAE5',
   },
   statValue: {
-    color: '#f8fafc',
+    color: '#1F1A3D',
     fontSize: 36,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
   statMeta: {
-    color: '#64748b',
+    color: '#6D28D9',
     fontSize: 13,
-    fontFamily: 'sans-serif',
   },
   sectionTitle: {
     color: palette.text,
     fontSize: 20,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
   disputeHead: {
     flexDirection: 'row',
@@ -168,17 +167,15 @@ const styles = StyleSheet.create({
   disputeTitle: {
     color: palette.text,
     fontSize: 16,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
   disputeMeta: {
-    color: '#94a3b8',
+    color: '#6D28D9',
     fontSize: 12,
-    fontFamily: 'sans-serif',
   },
   disputeReason: {
-    color: '#cbd5e1',
+    color: '#1F1A3D',
     fontSize: 13,
-    fontFamily: 'sans-serif',
   },
   actionsRow: {
     flexDirection: 'row',
@@ -193,22 +190,21 @@ const styles = StyleSheet.create({
   },
   refundBtn: {
     borderWidth: 1,
-    borderColor: '#ef4444',
-    backgroundColor: '#7f1d1d',
+    borderColor: '#E6DCF7',
+    backgroundColor: '#FEE2E2',
   },
   payBtn: {
     borderWidth: 1,
-    borderColor: '#3b82f6',
-    backgroundColor: '#1d3f66',
+    borderColor: '#6D28D9',
+    backgroundColor: '#6D28D9',
   },
   actionText: {
-    color: '#f8fafc',
+    color: '#1F1A3D',
     fontSize: 13,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
   feedback: {
-    color: '#94a3b8',
+    color: '#6D28D9',
     fontSize: 12,
-    fontFamily: 'sans-serif',
   },
 });

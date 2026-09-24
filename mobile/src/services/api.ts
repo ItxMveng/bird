@@ -15,7 +15,14 @@ async function post<T>(fn: string, data: Record<string, unknown>): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
+    let message = `Requête refusée (${response.status})`;
+    try {
+      const body = (await response.json()) as { error?: { message?: string } };
+      if (body?.error?.message) message = body.error.message.replace(/^ERR_[A-Z_]+:\s*/, '');
+    } catch {
+      // corps non JSON : on garde le message générique
+    }
+    throw new Error(message);
   }
 
   return response.json() as Promise<T>;

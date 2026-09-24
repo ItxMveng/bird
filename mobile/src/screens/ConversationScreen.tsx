@@ -66,7 +66,6 @@ export function ConversationScreen({ thread, onBack }: { thread: MessageThread; 
 const styles = StyleSheet.create({
   empty: {
     color: palette.textDim,
-    fontFamily: 'serif',
   },
   messagesWrap: {
     gap: 8,
@@ -79,30 +78,28 @@ const styles = StyleSheet.create({
   },
   bubbleMine: {
     alignSelf: 'flex-end',
-    backgroundColor: '#14b8a633',
+    backgroundColor: '#6D28D91A',
     borderWidth: 1,
-    borderColor: '#2dd4bf66',
+    borderColor: '#E6DCF7',
   },
   bubbleOther: {
     alignSelf: 'flex-start',
-    backgroundColor: '#0f2f48cc',
+    backgroundColor: '#6D28D91A',
     borderWidth: 1,
-    borderColor: '#67e8f933',
+    borderColor: '#E6DCF7',
   },
   sender: {
     color: palette.tealSoft,
     fontSize: 11,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: '600',
   },
   text: {
     color: palette.text,
     fontSize: 13,
-    fontFamily: 'sans-serif',
   },
   time: {
     color: palette.textDim,
     fontSize: 10,
-    fontFamily: 'sans-serif',
     alignSelf: 'flex-end',
   },
   input: {

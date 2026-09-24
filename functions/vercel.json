@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/cron", "destination": "/api/cron" },
+    { "source": "/:fn", "destination": "/api/call?fn=:fn" }
+  ]
+}

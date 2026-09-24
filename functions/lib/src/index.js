@@ -43,9 +43,12 @@ const https_1 = require("firebase-functions/v2/https");
 const scheduler_1 = require("firebase-functions/v2/scheduler");
 const options_1 = require("firebase-functions/v2/options");
 const domain_1 = require("./domain");
-admin.initializeApp();
+const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
+admin.initializeApp(serviceAccount ? { credential: admin.credential.cert(JSON.parse(serviceAccount)) } : undefined);
 const db = admin.firestore();
 (0, options_1.setGlobalOptions)({ region: 'us-central1', maxInstances: 10 });
+const DEMO_TOPUP_MAX = 500_000;
+const DEMO_BALANCE_CAP = 2_000_000;
 const CONFIG = {
     commissionBps: 500,
     secretCodeSalt: process.env.SECRET_CODE_SALT ?? 'dev-salt',
@@ -575,6 +578,11 @@ exports.topUpWallet = (0, https_1.onCall)(async (request) => {
             throw new domain_1.DomainError('ERR_DUPLICATE_IDEMPOTENCY_KEY', 'idempotencyKey requis');
         if (!Number.isFinite(amount) || amount <= 0)
             throw new https_1.HttpsError('invalid-argument', 'Montant invalide');
+        if (process.env.DEMO_MODE !== '1') {
+            throw new https_1.HttpsError('failed-precondition', 'Recharge indisponible : elle passe par le paiement mobile (webhook signé).');
+        }
+        if (amount > DEMO_TOPUP_MAX)
+            throw new https_1.HttpsError('invalid-argument', `Recharge de démonstration limitée à ${DEMO_TOPUP_MAX} XAF`);
         const first = await ensureIdempotent(`topup_${uid}`, idempotencyKey);
         if (!first)
             return { ok: true, duplicate: true };
@@ -583,6 +591,9 @@ exports.topUpWallet = (0, https_1.onCall)(async (request) => {
         await db.runTransaction(async (tx) => {
             const snap = await tx.get(walletRef);
             const wallet = snap.data();
+            if ((wallet?.balance ?? 0) + amount > DEMO_BALANCE_CAP) {
+                throw new https_1.HttpsError('failed-precondition', `Solde de démonstration plafonné à ${DEMO_BALANCE_CAP} XAF`);
+            }
             tx.set(walletRef, {
                 uid,
                 balance: (wallet?.balance ?? 0) + amount,

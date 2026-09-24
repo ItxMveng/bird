@@ -1,24 +1,48 @@
-import React, { useMemo, useState } from 'react';
-import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAppData } from '../context/AppDataContext';
 import { useAuth } from '../context/AuthContext';
 import { Auction, AuctionCategory } from '../types';
-import { BirdButton, BirdCard, BirdScreen, palette } from '../components/ui-kit';
-import { formatXaf, getHoursLeft } from '../utils/format';
+import { BirdScreen } from '../components/ui-kit';
+import { formatXaf } from '../utils/format';
+import { theme } from '../theme';
 
-const categories: Array<{ id: AuctionCategory; label: string }> = [
-  { id: 'phones', label: 'Telephones' },
-  { id: 'electronics', label: 'Informatique' },
-  { id: 'moto', label: 'Motos' },
-  { id: 'appliances', label: 'Maison' },
+const categories: Array<{ id: AuctionCategory | 'all'; label: string; colors: readonly [string, string] }> = [
+  { id: 'all', label: 'Tout', colors: theme.gradientSoft },
+  { id: 'phones', label: 'Téléphones', colors: theme.gradientCool },
+  { id: 'electronics', label: 'Informatique', colors: theme.gradientMint },
+  { id: 'moto', label: 'Motos', colors: theme.gradientSun },
+  { id: 'appliances', label: 'Maison', colors: ['#EC4899', '#FB923C'] },
 ];
 
 const labelByCategory: Record<AuctionCategory, string> = {
-  phones: 'Telephones',
+  phones: 'Téléphones',
   electronics: 'Informatique',
   moto: 'Motos',
   appliances: 'Maison',
 };
+
+function useNow(intervalMs = 1000) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), intervalMs);
+    return () => clearInterval(id);
+  }, [intervalMs]);
+  return now;
+}
+
+export function formatCountdown(endAt: string, now: number): { text: string; urgent: boolean; over: boolean } {
+  const ms = new Date(endAt).getTime() - now;
+  if (ms <= 0) return { text: 'Terminée', urgent: false, over: true };
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h >= 24) return { text: `${Math.floor(h / 24)} j ${h % 24} h`, urgent: false, over: false };
+  if (h > 0) return { text: `${h} h ${String(m).padStart(2, '0')} min`, urgent: false, over: false };
+  return { text: `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`, urgent: ms < 10 * 60 * 1000, over: false };
+}
 
 export function HomeScreen({
   onOpenAuction,
@@ -37,291 +61,180 @@ export function HomeScreen({
 }) {
   const { auctions, wallet } = useAppData();
   const { user } = useAuth();
-  const [activeCategory, setActiveCategory] = useState<AuctionCategory>('phones');
+  const [active, setActive] = useState<AuctionCategory | 'all'>('all');
+  const now = useNow();
 
-  const activeAuctions = useMemo(
-    () =>
-      auctions
-        .filter((auction) => auction.category === activeCategory)
-        .sort((a, b) => new Date(a.endAt).getTime() - new Date(b.endAt).getTime())
-        .slice(0, 8),
-    [auctions, activeCategory],
+  const firstName = (user?.name ?? '').split(' ')[0] || 'vous';
+  const running = useMemo(() => auctions.filter((a) => new Date(a.endAt).getTime() > now), [auctions, Math.floor(now / 30000)]);
+  const endingSoon = useMemo(
+    () => [...running].sort((a, b) => new Date(a.endAt).getTime() - new Date(b.endAt).getTime()).slice(0, 6),
+    [running],
   );
-
-  const fallbackAuctions = useMemo(
-    () => [...auctions].sort((a, b) => b.currentPrice - a.currentPrice).slice(0, 6),
-    [auctions],
+  const list = useMemo(
+    () => (active === 'all' ? running : running.filter((a) => a.category === active)).sort((a, b) => new Date(a.endAt).getTime() - new Date(b.endAt).getTime()),
+    [running, active],
   );
-
-  const displayedAuctions = activeAuctions.length > 0 ? activeAuctions : fallbackAuctions;
 
   return (
-    <BirdScreen title="Encheres Cameroon" subtitle={`Bienvenue ${user?.name ?? 'vendeur'}. Plateforme d'encheres securisee.`}>
-      <BirdCard style={styles.walletHero}>
-        <View style={styles.walletRow}>
-          <View>
-            <Text style={styles.walletLabel}>Portefeuille Escrow</Text>
-            <Text style={styles.walletValue}>{formatXaf(wallet.balance)}</Text>
+    <BirdScreen title={`Bonjour ${firstName}`} subtitle="Enchérissez en confiance : l’argent reste bloqué jusqu’à la remise en main propre.">
+      <Pressable onPress={onOpenWallet} accessibilityRole="button" accessibilityLabel="Ouvrir le portefeuille">
+        <LinearGradient colors={theme.gradientSun} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.wallet}>
+          <View style={styles.walletBlob} />
+          <Text style={styles.walletLabel}>Mon portefeuille</Text>
+          <Text style={styles.walletValue}>{formatXaf(wallet.balance)}</Text>
+          <View style={styles.walletRow}>
+            <Text style={styles.walletHint}>{wallet.blocked > 0 ? `${formatXaf(wallet.blocked)} en séquestre` : 'Aucun fonds en séquestre'}</Text>
+            <View style={styles.walletBtn}><Text style={styles.walletBtnText}>Recharger</Text></View>
           </View>
-          <Pressable style={styles.walletBtn} onPress={onOpenWallet}>
-            <Text style={styles.walletBtnText}>Recharger</Text>
-          </Pressable>
-        </View>
-      </BirdCard>
-
-      <Pressable style={styles.searchBar} onPress={onOpenSearch}>
-        <Text style={styles.searchText}>Rechercher un article...</Text>
-        <Text style={styles.searchAction}>Filtres</Text>
+        </LinearGradient>
       </Pressable>
 
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Categories</Text>
-        <Pressable onPress={onOpenSearch}>
-          <Text style={styles.linkText}>Voir tout</Text>
-        </Pressable>
+      <View style={styles.tiles}>
+        <Tile label="Vendre" colors={theme.gradientSoft} glyph="+" onPress={onOpenCreateAuction} />
+        <Tile label="Mes mises" colors={theme.gradientCool} glyph="◎" onPress={onOpenTransactions} />
+        <Tile label="Messages" colors={theme.gradientMint} glyph="✉" onPress={onOpenMessages} />
+        <Tile label="Explorer" colors={['#EC4899', '#FB923C']} glyph="⌕" onPress={onOpenSearch} />
       </View>
-      <View style={styles.categoriesRow}>
-        {categories.map((item) => {
-          const active = item.id === activeCategory;
+
+      {endingSoon.length > 0 && (
+        <>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Se termine bientôt</Text>
+            <View style={styles.liveDot} />
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carousel}>
+            {endingSoon.map((a) => {
+              const c = formatCountdown(a.endAt, now);
+              return (
+                <Pressable key={a.id} style={styles.hot} onPress={() => onOpenAuction(a)} accessibilityRole="button" accessibilityLabel={a.title}>
+                  <ImageBackground source={{ uri: a.imageUrl }} style={styles.hotImg} imageStyle={styles.hotImgStyle}>
+                    <LinearGradient colors={['transparent', '#1F1A3DCC']} style={styles.hotShade}>
+                      <View style={[styles.timer, c.urgent && styles.timerUrgent]}><Text style={styles.timerText}>{c.text}</Text></View>
+                      <Text style={styles.hotTitle} numberOfLines={1}>{a.title}</Text>
+                      <Text style={styles.hotPrice}>{formatXaf(a.currentPrice)}</Text>
+                    </LinearGradient>
+                  </ImageBackground>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </>
+      )}
+
+      <Text style={styles.sectionTitle}>Catégories</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        {categories.map((c) => {
+          const on = c.id === active;
           return (
-            <Pressable key={item.id} style={[styles.categoryChip, active ? styles.categoryChipActive : undefined]} onPress={() => setActiveCategory(item.id)}>
-              <Text style={[styles.categoryText, active ? styles.categoryTextActive : undefined]}>{item.label}</Text>
+            <Pressable key={c.id} onPress={() => setActive(c.id)} accessibilityRole="button" accessibilityState={{ selected: on }}>
+              {on ? (
+                <LinearGradient colors={c.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.chip}>
+                  <Text style={[styles.chipText, { color: '#fff' }]}>{c.label}</Text>
+                </LinearGradient>
+              ) : (
+                <View style={[styles.chip, styles.chipOff]}><Text style={styles.chipText}>{c.label}</Text></View>
+              )}
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Encheres en cours</Text>
-        <Text style={styles.escrowText}>Garantie Escrow</Text>
+        <Text style={styles.sectionTitle}>Enchères en cours</Text>
+        <Text style={styles.count}>{list.length}</Text>
       </View>
 
-      <View style={styles.grid}>
-        {displayedAuctions.map((auction) => (
-          <Pressable key={auction.id} style={styles.auctionCard} onPress={() => onOpenAuction(auction)}>
-            <ImageBackground source={{ uri: auction.imageUrl }} style={styles.cardImage} imageStyle={styles.cardImageStyle}>
-              <View style={styles.secureTag}>
-                <Text style={styles.secureTagText}>SECURE</Text>
-              </View>
-              <View style={styles.timerTag}>
-                <Text style={styles.timerText}>{`${Math.max(0, getHoursLeft(auction.endAt))}h`}</Text>
-              </View>
-            </ImageBackground>
-            <View style={styles.cardBody}>
-              <Text style={styles.cardTitle} numberOfLines={1}>{auction.title}</Text>
-              <Text style={styles.cardMeta} numberOfLines={1}>{labelByCategory[auction.category]}</Text>
-              <Text style={styles.cardPrice}>{formatXaf(auction.currentPrice)}</Text>
-              <BirdButton label="Miser" onPress={() => onOpenAuction(auction)} />
-            </View>
-          </Pressable>
-        ))}
-      </View>
+      {list.length === 0 ? (
+        <View style={styles.empty}>
+          <Text style={styles.emptyTitle}>Rien ici pour le moment</Text>
+          <Text style={styles.emptyText}>Essayez une autre catégorie, ou lancez la première enchère.</Text>
+        </View>
+      ) : (
+        <View style={styles.grid}>
+          {list.map((a) => {
+            const c = formatCountdown(a.endAt, now);
+            return (
+              <Pressable key={a.id} style={styles.card} onPress={() => onOpenAuction(a)} accessibilityRole="button" accessibilityLabel={`${a.title}, ${formatXaf(a.currentPrice)}`}>
+                <ImageBackground source={{ uri: a.imageUrl }} style={styles.cardImg} imageStyle={styles.cardImgStyle}>
+                  <View style={[styles.timer, styles.timerCorner, c.urgent && styles.timerUrgent]}><Text style={styles.timerText}>{c.text}</Text></View>
+                </ImageBackground>
+                <View style={styles.cardBody}>
+                  <Text style={styles.cardCat}>{labelByCategory[a.category]} · {a.city}</Text>
+                  <Text style={styles.cardTitle} numberOfLines={2}>{a.title}</Text>
+                  <Text style={styles.cardPrice}>{formatXaf(a.currentPrice)}</Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
 
-      <View style={styles.quickRow}>
-        <Pressable style={styles.quickBtn} onPress={onOpenCreateAuction}>
-          <Text style={styles.quickBtnText}>Creer une enchere</Text>
-        </Pressable>
-        <Pressable style={styles.quickBtn} onPress={onOpenTransactions}>
-          <Text style={styles.quickBtnText}>Mes mises</Text>
-        </Pressable>
-        <Pressable style={styles.quickBtn} onPress={onOpenMessages}>
-          <Text style={styles.quickBtnText}>Messages</Text>
-        </Pressable>
-      </View>
+      <LinearGradient colors={theme.gradientCool} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.trust}>
+        <Text style={styles.trustTitle}>Comment votre argent est protégé</Text>
+        <Text style={styles.trustLine}>1. Vous gagnez : la somme est bloquée dans votre portefeuille.</Text>
+        <Text style={styles.trustLine}>2. Le vendeur livre, vous recevez un code secret à 6 chiffres.</Text>
+        <Text style={styles.trustLine}>3. Vous donnez le code à la remise : le vendeur est payé. Un souci ? Ouvrez un litige.</Text>
+      </LinearGradient>
     </BirdScreen>
   );
 }
 
-const styles = StyleSheet.create({
-  walletHero: {
-    borderColor: '#2563eb55',
-    backgroundColor: '#1847b8',
-  },
-  walletRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 10,
-  },
-  walletLabel: {
-    color: '#bfdbfe',
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    fontFamily: 'sans-serif-medium',
-  },
-  walletValue: {
-    color: '#eff6ff',
-    fontSize: 28,
-    marginTop: 3,
-    fontFamily: 'sans-serif-medium',
-  },
-  walletBtn: {
-    borderRadius: 12,
-    backgroundColor: '#ffffff29',
-    borderWidth: 1,
-    borderColor: '#ffffff36',
-    minHeight: 42,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-  },
-  walletBtnText: {
-    color: '#e2e8f0',
-    fontSize: 14,
-    fontFamily: 'sans-serif-medium',
-  },
-  searchBar: {
-    minHeight: 50,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#2c4562',
-    backgroundColor: '#1a2f48',
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  searchText: {
-    color: '#9fb0c7',
-    fontSize: 16,
-    fontFamily: 'sans-serif',
-  },
-  searchAction: {
-    color: '#60a5fa',
-    fontSize: 13,
-    fontFamily: 'sans-serif-medium',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  sectionTitle: {
-    color: palette.text,
-    fontSize: 20,
-    fontFamily: 'sans-serif-medium',
-  },
-  linkText: {
-    color: '#3b82f6',
-    fontSize: 14,
-    fontFamily: 'sans-serif-medium',
-  },
-  escrowText: {
-    color: '#22c55e',
-    fontSize: 14,
-    fontFamily: 'sans-serif-medium',
-  },
-  categoriesRow: {
-    flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  categoryChip: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#2d4663',
-    backgroundColor: '#0d2238',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  categoryChipActive: {
-    borderColor: '#2563eb',
-    backgroundColor: '#2563eb',
-  },
-  categoryText: {
-    color: '#bfd0e6',
-    fontSize: 13,
-    fontFamily: 'sans-serif-medium',
-  },
-  categoryTextActive: {
-    color: '#eff6ff',
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  auctionCard: {
-    width: '48.2%',
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#2b4664',
-    backgroundColor: '#0b2237',
-  },
-  cardImage: {
-    height: 128,
-    justifyContent: 'space-between',
-    padding: 8,
-  },
-  cardImageStyle: {
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-  },
-  secureTag: {
-    alignSelf: 'flex-start',
-    borderRadius: 999,
-    backgroundColor: '#0a131dba',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  secureTagText: {
-    color: '#86efac',
-    fontSize: 10,
-    fontFamily: 'sans-serif-medium',
-  },
-  timerTag: {
-    alignSelf: 'stretch',
-    borderRadius: 999,
-    backgroundColor: '#dc2626',
-    alignItems: 'center',
-    paddingVertical: 5,
-  },
-  timerText: {
-    color: '#fee2e2',
-    fontSize: 12,
-    fontFamily: 'sans-serif-medium',
-  },
-  cardBody: {
-    padding: 10,
-    gap: 4,
-  },
-  cardTitle: {
-    color: palette.text,
-    fontSize: 16,
-    fontFamily: 'sans-serif-medium',
-  },
-  cardMeta: {
-    color: '#9fb0c7',
-    fontSize: 12,
-    fontFamily: 'sans-serif',
-  },
-  cardPrice: {
-    color: '#facc15',
-    fontSize: 22,
-    fontFamily: 'sans-serif-medium',
-    marginBottom: 3,
-  },
-  quickRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  quickBtn: {
-    flex: 1,
-    minHeight: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#334e6d',
-    backgroundColor: '#102b42',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickBtnText: {
-    color: '#cbd5e1',
-    fontSize: 12,
-    textAlign: 'center',
-    fontFamily: 'sans-serif-medium',
-  },
-});
+function Tile({ label, colors, glyph, onPress }: { label: string; colors: readonly [string, string]; glyph: string; onPress: () => void }) {
+  return (
+    <Pressable style={styles.tile} onPress={onPress} accessibilityRole="button" accessibilityLabel={label}>
+      <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.tileIcon}>
+        <Text style={styles.tileGlyph}>{glyph}</Text>
+      </LinearGradient>
+      <Text style={styles.tileLabel}>{label}</Text>
+    </Pressable>
+  );
+}
 
+const styles = StyleSheet.create({
+  wallet: { borderRadius: 26, padding: 18, overflow: 'hidden', ...theme.shadow },
+  walletBlob: { position: 'absolute', right: -30, top: -30, width: 140, height: 140, borderRadius: 70, backgroundColor: '#FFFFFF33' },
+  walletLabel: { color: '#5A2D05', fontSize: 12.5, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
+  walletValue: { color: '#2B1400', fontSize: 34, fontWeight: '900', marginTop: 2, letterSpacing: -0.5 },
+  walletRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
+  walletHint: { color: '#5A2D05', fontSize: 12.5, fontWeight: '600', flex: 1 },
+  walletBtn: { backgroundColor: '#1F1A3D', borderRadius: 999, paddingHorizontal: 16, paddingVertical: 9 },
+  walletBtnText: { color: '#fff', fontWeight: '800', fontSize: 13 },
+  tiles: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
+  tile: { flex: 1, alignItems: 'center', gap: 6 },
+  tileIcon: { width: 58, height: 58, borderRadius: 20, alignItems: 'center', justifyContent: 'center', ...theme.shadow },
+  tileGlyph: { color: '#fff', fontSize: 26, fontWeight: '700' },
+  tileLabel: { color: theme.ink, fontSize: 12.5, fontWeight: '700' },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+  sectionTitle: { color: theme.ink, fontSize: 19, fontWeight: '900', letterSpacing: -0.3 },
+  liveDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#EF4444' },
+  count: { color: theme.primary, fontWeight: '800', backgroundColor: theme.soft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 2, overflow: 'hidden' },
+  carousel: { gap: 12, paddingRight: 16 },
+  hot: { width: 230, height: 170, borderRadius: 22, overflow: 'hidden', backgroundColor: theme.soft, ...theme.shadow },
+  hotImg: { flex: 1, justifyContent: 'flex-end' },
+  hotImgStyle: { borderRadius: 22 },
+  hotShade: { padding: 12, gap: 2, justifyContent: 'flex-end', flex: 1 },
+  hotTitle: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  hotPrice: { color: '#FDE68A', fontWeight: '900', fontSize: 18 },
+  timer: { alignSelf: 'flex-start', backgroundColor: '#1F1A3DDD', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 4 },
+  timerCorner: { margin: 8 },
+  timerUrgent: { backgroundColor: '#DC2626' },
+  timerText: { color: '#fff', fontWeight: '800', fontSize: 12, fontVariant: ['tabular-nums'] },
+  chips: { gap: 8, paddingRight: 16 },
+  chip: { borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10 },
+  chipOff: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: theme.line },
+  chipText: { color: theme.muted, fontWeight: '700', fontSize: 13.5 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
+  card: { width: '48.4%', backgroundColor: '#fff', borderRadius: 22, overflow: 'hidden', borderWidth: 1, borderColor: theme.line, ...theme.shadow },
+  cardImg: { height: 128, backgroundColor: theme.soft },
+  cardImgStyle: { borderTopLeftRadius: 22, borderTopRightRadius: 22 },
+  cardBody: { padding: 12, gap: 3 },
+  cardCat: { color: theme.dim, fontSize: 11.5, fontWeight: '700' },
+  cardTitle: { color: theme.ink, fontSize: 15, fontWeight: '800', minHeight: 38 },
+  cardPrice: { color: theme.primary, fontSize: 19, fontWeight: '900' },
+  empty: { backgroundColor: '#fff', borderRadius: 22, padding: 22, alignItems: 'center', borderWidth: 1, borderColor: theme.line },
+  emptyTitle: { color: theme.ink, fontWeight: '800', fontSize: 16 },
+  emptyText: { color: theme.muted, marginTop: 4, textAlign: 'center' },
+  trust: { borderRadius: 24, padding: 18, gap: 6 },
+  trustTitle: { color: '#fff', fontWeight: '900', fontSize: 17, marginBottom: 2 },
+  trustLine: { color: '#FFFFFFEE', fontSize: 13.5, lineHeight: 19 },
+});
