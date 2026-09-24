@@ -6,8 +6,10 @@ import {
   assertCanMarkDelivered,
   assertCanResolveDispute,
   canOpenDispute,
+  computeAntiSnipeEnd,
   computeCommission,
   DomainError,
+  minBidIncrement,
 } from '../src/domain';
 
 test('assertAllowedDuration accepte durées V1', () => {
@@ -75,4 +77,50 @@ test('assertCanMarkDelivered autorise uniquement vendeur en statut blocked', () 
   assert.doesNotThrow(() => assertCanMarkDelivered('seller-a', 'seller-a', 'blocked'));
   assert.throws(() => assertCanMarkDelivered('buyer-b', 'seller-a', 'blocked'));
   assert.throws(() => assertCanMarkDelivered('seller-a', 'seller-a', 'delivered'));
+});
+
+test('minBidIncrement applique les paliers XAF', () => {
+  assert.equal(minBidIncrement(5_000), 500);
+  assert.equal(minBidIncrement(60_000), 1_000);
+  assert.equal(minBidIncrement(200_000), 5_000);
+  assert.equal(minBidIncrement(800_000), 10_000);
+});
+
+test("assertBid rejette une enchère sous l'incrément minimum", () => {
+  const base = {
+    currentPrice: 60_000,
+    walletBalance: 500_000,
+    sellerId: 'seller-a',
+    bidderId: 'buyer-b',
+    auctionStatus: 'active' as const,
+    endAtMs: Date.now() + 10_000,
+    nowMs: Date.now(),
+  };
+  assert.throws(
+    () => assertBid({ ...base, amount: 60_500 }),
+    (error: unknown) => error instanceof DomainError && error.code === 'ERR_BID_TOO_LOW',
+  );
+  assert.doesNotThrow(() => assertBid({ ...base, amount: 61_000 }));
+});
+
+test('anti-sniping prolonge de 2 min une enchère posée dans la dernière fenêtre', () => {
+  const now = 1_000_000;
+  const res = computeAntiSnipeEnd({ endAtMs: now + 30_000, nowMs: now, extensions: 0 });
+  assert.equal(res.extended, true);
+  assert.equal(res.endAtMs, now + 120_000);
+  assert.equal(res.extensions, 1);
+});
+
+test('anti-sniping ne touche pas une enchère posée bien avant la fin', () => {
+  const now = 1_000_000;
+  const res = computeAntiSnipeEnd({ endAtMs: now + 3_600_000, nowMs: now, extensions: 0 });
+  assert.equal(res.extended, false);
+  assert.equal(res.endAtMs, now + 3_600_000);
+});
+
+test('anti-sniping est plafonné à 10 prolongations', () => {
+  const now = 1_000_000;
+  const res = computeAntiSnipeEnd({ endAtMs: now + 30_000, nowMs: now, extensions: 10 });
+  assert.equal(res.extended, false);
+  assert.equal(res.endAtMs, now + 30_000);
 });

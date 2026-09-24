@@ -31,6 +31,35 @@ export function assertAllowedDuration(hours: number): asserts hours is AuctionDu
   }
 }
 
+/** Palier d'incrément minimum (XAF) selon le prix courant. */
+export function minBidIncrement(currentPrice: number): number {
+  if (currentPrice < 20_000) return 500;
+  if (currentPrice < 100_000) return 1_000;
+  if (currentPrice < 500_000) return 5_000;
+  return 10_000;
+}
+
+export const ANTI_SNIPE_WINDOW_MS = 2 * 60 * 1000;
+export const ANTI_SNIPE_EXTENSION_MS = 2 * 60 * 1000;
+export const ANTI_SNIPE_MAX_EXTENSIONS = 10;
+
+/**
+ * Anti-sniping : une enchère posée dans les 2 dernières minutes repousse la fin de 2 minutes
+ * (10 prolongations max), pour qu'un dernier clic ne prive pas les autres acheteurs de répondre.
+ */
+export function computeAntiSnipeEnd(args: {
+  endAtMs: number;
+  nowMs: number;
+  extensions: number;
+}): { endAtMs: number; extended: boolean; extensions: number } {
+  const { endAtMs, nowMs, extensions } = args;
+  const inWindow = endAtMs - nowMs <= ANTI_SNIPE_WINDOW_MS;
+  if (!inWindow || extensions >= ANTI_SNIPE_MAX_EXTENSIONS) {
+    return { endAtMs, extended: false, extensions };
+  }
+  return { endAtMs: nowMs + ANTI_SNIPE_EXTENSION_MS, extended: true, extensions: extensions + 1 };
+}
+
 export function assertBid(args: {
   amount: number;
   currentPrice: number;
@@ -54,6 +83,10 @@ export function assertBid(args: {
   }
   if (amount <= currentPrice) {
     throw new DomainError('ERR_BID_TOO_LOW', 'Le montant doit être strictement supérieur au prix actuel');
+  }
+  const minIncrement = minBidIncrement(currentPrice);
+  if (amount < currentPrice + minIncrement) {
+    throw new DomainError('ERR_BID_TOO_LOW', `Incrément minimum : ${minIncrement} XAF`);
   }
   if (walletBalance < amount) {
     throw new DomainError('ERR_WALLET_INSUFFICIENT', 'Solde insuffisant pour enchérir');

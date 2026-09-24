@@ -9,6 +9,7 @@ import {
   assertCanMarkDelivered,
   assertCanResolveDispute,
   canOpenDispute,
+  computeAntiSnipeEnd,
   computeCommission,
   DomainError,
 } from './domain';
@@ -41,6 +42,7 @@ type AuctionDoc = {
   updatedAt: admin.firestore.Timestamp;
   winnerBidId?: string;
   winnerId?: string;
+  extensions?: number;
 };
 
 type WalletDoc = { balance: number; blocked: number };
@@ -271,7 +273,16 @@ export const placeBid = onCall(async (request) => {
         idempotencyKey,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
+      const nowMs = Date.now();
+      const snipe = computeAntiSnipeEnd({
+        endAtMs: auction.endAt.toMillis(),
+        nowMs,
+        extensions: auction.extensions ?? 0,
+      });
       tx.update(auctionRef, {
+        ...(snipe.extended
+          ? { endAt: admin.firestore.Timestamp.fromMillis(snipe.endAtMs), extensions: snipe.extensions }
+          : {}),
         currentPrice: amount,
         winnerBidId: bidRef.id,
         winnerId: uid,

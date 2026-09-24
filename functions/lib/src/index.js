@@ -225,7 +225,16 @@ exports.placeBid = (0, https_1.onCall)(async (request) => {
                 idempotencyKey,
                 createdAt: admin.firestore.FieldValue.serverTimestamp(),
             });
+            const nowMs = Date.now();
+            const snipe = (0, domain_1.computeAntiSnipeEnd)({
+                endAtMs: auction.endAt.toMillis(),
+                nowMs,
+                extensions: auction.extensions ?? 0,
+            });
             tx.update(auctionRef, {
+                ...(snipe.extended
+                    ? { endAt: admin.firestore.Timestamp.fromMillis(snipe.endAtMs), extensions: snipe.extensions }
+                    : {}),
                 currentPrice: amount,
                 winnerBidId: bidRef.id,
                 winnerId: uid,

@@ -45,3 +45,9 @@ Date: 2026-03-29
 ## Milestone 12 — Hardening production
 - ⚠️ Partiel: documentation sécurité/plan/statut mise à jour.
 - ⚠️ Reste à finaliser: architecture doc exhaustive, E2E, optimisation coûts et runbooks.
+
+## Mise à jour 2026-09-24 — équité des enchères
+- ✅ Incréments minimum par paliers (500 / 1 000 / 5 000 / 10 000 XAF) appliqués côté backend (`assertBid`) et affichés côté mobile.
+- ✅ Anti-sniping : une enchère posée dans les 2 dernières minutes prolonge la fin de 2 min (10 prolongations max, champ `extensions`).
+- ✅ 13 tests unitaires du domaine passent (`node --test lib/test/domain.test.js`).
+- ⚠️ Non déployé : les Cloud Functions nécessitent un `firebase deploy` avec les identifiants du projet Firebase.

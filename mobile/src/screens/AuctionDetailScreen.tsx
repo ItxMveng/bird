@@ -5,12 +5,12 @@ import { Auction } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useAppData } from '../context/AppDataContext';
 import { BirdButton, BirdCard, BirdScreen, palette } from '../components/ui-kit';
-import { formatDateTime, formatXaf, getHoursLeft } from '../utils/format';
+import { formatDateTime, formatXaf, getHoursLeft, minBidIncrement } from '../utils/format';
 
 export function AuctionDetailScreen({ auction, onBack }: { auction: Auction; onBack: () => void }) {
   const { user } = useAuth();
   const { auctions, bids, profiles, placeBidLocal } = useAppData();
-  const [amount, setAmount] = useState(String(auction.currentPrice + 1000));
+  const [amount, setAmount] = useState(String(auction.currentPrice + minBidIncrement(auction.currentPrice)));
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ tone: 'error' | 'success' | 'info'; text: string } | null>(null);
 
@@ -24,7 +24,7 @@ export function AuctionDetailScreen({ auction, onBack }: { auction: Auction; onB
         .slice(0, 20),
     [bids, liveAuction.id],
   );
-  const minimumBid = useMemo(() => liveAuction.currentPrice + 1000, [liveAuction.currentPrice]);
+  const minimumBid = useMemo(() => liveAuction.currentPrice + minBidIncrement(liveAuction.currentPrice), [liveAuction.currentPrice]);
 
   const submitBid = async () => {
     const numericAmount = Number(amount);

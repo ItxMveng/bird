@@ -59,3 +59,41 @@ const domain_1 = require("../src/domain");
     strict_1.default.throws(() => (0, domain_1.assertCanMarkDelivered)('buyer-b', 'seller-a', 'blocked'));
     strict_1.default.throws(() => (0, domain_1.assertCanMarkDelivered)('seller-a', 'seller-a', 'delivered'));
 });
+(0, node_test_1.default)('minBidIncrement applique les paliers XAF', () => {
+    strict_1.default.equal((0, domain_1.minBidIncrement)(5_000), 500);
+    strict_1.default.equal((0, domain_1.minBidIncrement)(60_000), 1_000);
+    strict_1.default.equal((0, domain_1.minBidIncrement)(200_000), 5_000);
+    strict_1.default.equal((0, domain_1.minBidIncrement)(800_000), 10_000);
+});
+(0, node_test_1.default)("assertBid rejette une enchère sous l'incrément minimum", () => {
+    const base = {
+        currentPrice: 60_000,
+        walletBalance: 500_000,
+        sellerId: 'seller-a',
+        bidderId: 'buyer-b',
+        auctionStatus: 'active',
+        endAtMs: Date.now() + 10_000,
+        nowMs: Date.now(),
+    };
+    strict_1.default.throws(() => (0, domain_1.assertBid)({ ...base, amount: 60_500 }), (error) => error instanceof domain_1.DomainError && error.code === 'ERR_BID_TOO_LOW');
+    strict_1.default.doesNotThrow(() => (0, domain_1.assertBid)({ ...base, amount: 61_000 }));
+});
+(0, node_test_1.default)('anti-sniping prolonge de 2 min une enchère posée dans la dernière fenêtre', () => {
+    const now = 1_000_000;
+    const res = (0, domain_1.computeAntiSnipeEnd)({ endAtMs: now + 30_000, nowMs: now, extensions: 0 });
+    strict_1.default.equal(res.extended, true);
+    strict_1.default.equal(res.endAtMs, now + 120_000);
+    strict_1.default.equal(res.extensions, 1);
+});
+(0, node_test_1.default)('anti-sniping ne touche pas une enchère posée bien avant la fin', () => {
+    const now = 1_000_000;
+    const res = (0, domain_1.computeAntiSnipeEnd)({ endAtMs: now + 3_600_000, nowMs: now, extensions: 0 });
+    strict_1.default.equal(res.extended, false);
+    strict_1.default.equal(res.endAtMs, now + 3_600_000);
+});
+(0, node_test_1.default)('anti-sniping est plafonné à 10 prolongations', () => {
+    const now = 1_000_000;
+    const res = (0, domain_1.computeAntiSnipeEnd)({ endAtMs: now + 30_000, nowMs: now, extensions: 10 });
+    strict_1.default.equal(res.extended, false);
+    strict_1.default.equal(res.endAtMs, now + 30_000);
+});
