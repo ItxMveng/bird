@@ -47,7 +47,16 @@ jobs:
 
       - name: Build APK (arm64 + armeabi-v7a)
         working-directory: mobile/android
-        run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a --no-daemon --console=plain
+        shell: bash
+        run: |
+          set +e
+          ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a --no-daemon --console=plain 2>&1 | tee ../build.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            # Remonte les vraies erreurs Gradle dans les annotations du run (lisibles sans télécharger les logs)
+            grep -E "FAILURE|What went wrong|Could not|Execution failed|error:|Unresolved|not found|A problem occurred" ../build.log | head -12 | while read -r l; do echo "::error::$l"; done
+          fi
+          exit $status
 
       - name: Préparer l'artefact
         run: |
