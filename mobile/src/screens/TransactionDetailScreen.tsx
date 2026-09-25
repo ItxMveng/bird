@@ -173,7 +173,7 @@ export function TransactionDetailScreen({
 
 const styles = StyleSheet.create({
   refText: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -200,20 +200,20 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   productSeller: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 13,
   },
   amount: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 28,
     fontWeight: '600',
   },
   lockPill: {
     alignSelf: 'flex-start',
-    color: '#6D28D9',
-    borderColor: '#6D28D9',
+    color: '#111827',
+    borderColor: '#111827',
     borderWidth: 1,
-    backgroundColor: '#6D28D91A',
+    backgroundColor: '#1118271A',
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -236,21 +236,21 @@ const styles = StyleSheet.create({
     height: 30,
     borderRadius: 15,
     borderWidth: 2,
-    borderColor: '#6D28D9',
+    borderColor: '#111827',
     backgroundColor: '#FFFFFF',
     zIndex: 2,
   },
   stepDotActive: {
-    backgroundColor: '#6D28D9',
-    borderColor: '#6D28D9',
+    backgroundColor: '#111827',
+    borderColor: '#111827',
   },
   stepLabel: {
     marginTop: 6,
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 11,
   },
   stepLabelActive: {
-    color: '#6D28D9',
+    color: '#111827',
   },
   stepLine: {
     position: 'absolute',
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   stepLineActive: {
-    backgroundColor: '#6D28D9',
+    backgroundColor: '#111827',
   },
   sectionTitle: {
     color: palette.text,
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   sectionText: {
-    color: '#6D28D9',
+    color: '#111827',
     textAlign: 'center',
     fontSize: 16,
     lineHeight: 22,
@@ -285,36 +285,36 @@ const styles = StyleSheet.create({
     minHeight: 52,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E6DCF7',
+    borderColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   codeChar: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 22,
     fontWeight: '600',
   },
   hiddenInput: {
     borderWidth: 1,
-    borderColor: '#E6DCF7',
+    borderColor: '#E5E7EB',
     borderRadius: 10,
     backgroundColor: '#FFFFFF',
-    color: '#1F1A3D',
+    color: '#0F172A',
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 16,
   },
   infoCardBlue: {
-    borderColor: '#6D28D9',
-    backgroundColor: '#F5F0FF',
+    borderColor: '#111827',
+    backgroundColor: '#F5F5F4',
   },
   infoCardAmber: {
-    borderColor: '#E6DCF7',
+    borderColor: '#E5E7EB',
     backgroundColor: '#FEF3C7',
   },
   infoTitle: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 18,
     fontWeight: '600',
   },
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   infoBody: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     lineHeight: 20,
     fontSize: 16,
   },

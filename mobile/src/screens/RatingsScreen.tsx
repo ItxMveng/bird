@@ -89,8 +89,8 @@ const styles = StyleSheet.create({
   ratingRow: {
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E6DCF7',
-    backgroundColor: '#6D28D91A',
+    borderColor: '#E5E7EB',
+    backgroundColor: '#1118271A',
     padding: 10,
     gap: 4,
   },

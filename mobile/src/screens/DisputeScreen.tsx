@@ -117,19 +117,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   dotActive: {
-    backgroundColor: '#6D28D9',
+    backgroundColor: '#111827',
   },
   escrowCard: {
-    borderColor: '#6D28D9',
+    borderColor: '#111827',
     backgroundColor: '#FFFFFF',
   },
   escrowTitle: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 18,
     fontWeight: '600',
   },
   escrowText: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 14,
     lineHeight: 20,
   },
@@ -139,12 +139,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   subheading: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 16,
     lineHeight: 22,
   },
   fieldLabel: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -156,17 +156,17 @@ const styles = StyleSheet.create({
   reasonItem: {
     borderRadius: 11,
     borderWidth: 1,
-    borderColor: '#E6DCF7',
-    backgroundColor: '#F5F0FF',
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F5F5F4',
     paddingHorizontal: 12,
     paddingVertical: 9,
   },
   reasonItemActive: {
-    borderColor: '#6D28D9',
-    backgroundColor: '#6D28D9',
+    borderColor: '#111827',
+    backgroundColor: '#111827',
   },
   reasonText: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -181,20 +181,20 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: '#E6DCF7',
-    backgroundColor: '#F5F0FF',
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F5F5F4',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
   },
   uploadIcon: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 26,
     lineHeight: 26,
     fontWeight: '600',
   },
   uploadText: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 13,
   },
   attachmentsRow: {
@@ -205,13 +205,13 @@ const styles = StyleSheet.create({
   attachmentChip: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#E6DCF7',
-    backgroundColor: '#F5F0FF',
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F5F5F4',
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   attachmentText: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 11,
   },
   feedback: {

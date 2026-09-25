@@ -7,6 +7,8 @@ import { useAppData } from '../context/AppDataContext';
 import { BirdButton, BirdCard, BirdScreen, palette } from '../components/ui-kit';
 import { formatDateTime, formatXaf, getHoursLeft, minBidIncrement } from '../utils/format';
 
+const CATEGORY_LABEL: Record<string, string> = { phones: 'Téléphones', electronics: 'Informatique', moto: 'Motos', appliances: 'Maison' };
+
 export function AuctionDetailScreen({ auction, onBack }: { auction: Auction; onBack: () => void }) {
   const { user } = useAuth();
   const { auctions, bids, profiles, placeBidLocal } = useAppData();
@@ -64,7 +66,7 @@ export function AuctionDetailScreen({ auction, onBack }: { auction: Auction; onB
   };
 
   return (
-    <BirdScreen title="Details de l'Enchere" subtitle="Produit, vendeur et encheres live." onBack={onBack}>
+    <BirdScreen title="Annonce" onBack={onBack}>
       <ImageBackground source={{ uri: liveAuction.imageUrl }} style={styles.heroImage} imageStyle={styles.heroImageStyle}>
         <View style={styles.heroOverlay} />
         <View style={styles.heroTimer}>
@@ -73,13 +75,12 @@ export function AuctionDetailScreen({ auction, onBack }: { auction: Auction; onB
       </ImageBackground>
 
       <View style={styles.metaLine}>
-        <Text style={styles.badge}>NEUF - SCELLE</Text>
-        <Text style={styles.sellerBadge}>Vendeur verifie</Text>
+        <Text style={styles.badge}>{CATEGORY_LABEL[liveAuction.category] ?? liveAuction.category}</Text>
       </View>
 
       <Text style={styles.title}>{liveAuction.title}</Text>
       <Text style={styles.sellerText}>
-        Vendu par {sellerProfile?.name ?? liveAuction.sellerId}
+        Vendu par {sellerProfile?.name ?? 'un membre Bird'}
         {sellerProfile?.city ? ` - ${sellerProfile.city}` : ''}
       </Text>
 
@@ -134,7 +135,7 @@ export function AuctionDetailScreen({ auction, onBack }: { auction: Auction; onB
         <View style={styles.specGrid}>
           <View style={styles.specCard}>
             <Text style={styles.specKey}>Categorie</Text>
-            <Text style={styles.specValue}>{liveAuction.category}</Text>
+            <Text style={styles.specValue}>{CATEGORY_LABEL[liveAuction.category] ?? liveAuction.category}</Text>
           </View>
           <View style={styles.specCard}>
             <Text style={styles.specKey}>Ville</Text>
@@ -143,10 +144,6 @@ export function AuctionDetailScreen({ auction, onBack }: { auction: Auction; onB
           <View style={styles.specCard}>
             <Text style={styles.specKey}>Fin de vente</Text>
             <Text style={styles.specValue}>{formatDateTime(liveAuction.endAt)}</Text>
-          </View>
-          <View style={styles.specCard}>
-            <Text style={styles.specKey}>Vendeur</Text>
-            <Text style={styles.specValue}>{sellerProfile?.isPro ? 'PRO' : 'Standard'}</Text>
           </View>
         </View>
       </BirdCard>
@@ -190,7 +187,7 @@ const styles = StyleSheet.create({
   },
   heroOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#6D28D91A',
+    backgroundColor: '#1118271A',
   },
   heroTimer: {
     alignSelf: 'flex-end',
@@ -201,7 +198,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   heroTimerText: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -211,11 +208,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   badge: {
-    color: '#6D28D9',
+    color: '#111827',
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#E6DCF7',
-    backgroundColor: '#6D28D91A',
+    borderColor: '#E5E7EB',
+    backgroundColor: '#1118271A',
     paddingHorizontal: 10,
     paddingVertical: 5,
     fontSize: 11,
@@ -223,7 +220,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   sellerBadge: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -234,7 +231,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   sellerText: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 15,
     textDecorationLine: 'underline',
   },
@@ -249,20 +246,20 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   summaryLabel: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 12,
     textTransform: 'uppercase',
     fontWeight: '600',
   },
   summaryValue: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 24,
     fontWeight: '600',
   },
   summaryDivider: {
     width: 1,
     height: 45,
-    backgroundColor: '#E6DCF7',
+    backgroundColor: '#E5E7EB',
   },
   bidRow: {
     flexDirection: 'row',
@@ -273,7 +270,7 @@ const styles = StyleSheet.create({
     minHeight: 54,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E6DCF7',
+    borderColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 10,
     flexDirection: 'row',
@@ -281,13 +278,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   bidInputPrefix: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 14,
     fontWeight: '600',
   },
   bidInput: {
     flex: 1,
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 21,
     paddingVertical: 0,
     fontWeight: '600',
@@ -295,7 +292,7 @@ const styles = StyleSheet.create({
   bidBtn: {
     minWidth: 124,
     borderRadius: 12,
-    backgroundColor: '#6D28D9',
+    backgroundColor: '#111827',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 12,
@@ -309,7 +306,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   bidHint: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 12,
     textAlign: 'right',
   },
@@ -321,18 +318,18 @@ const styles = StyleSheet.create({
   },
   feedbackSuccess: {
     backgroundColor: '#D1FAE5',
-    borderColor: '#E6DCF7',
+    borderColor: '#E5E7EB',
   },
   feedbackError: {
     backgroundColor: '#FEE2E2',
-    borderColor: '#E6DCF7',
+    borderColor: '#E5E7EB',
   },
   feedbackInfo: {
-    backgroundColor: '#F5F0FF',
-    borderColor: '#E6DCF7',
+    backgroundColor: '#F5F5F4',
+    borderColor: '#E5E7EB',
   },
   feedbackText: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -342,7 +339,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   description: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 15,
     lineHeight: 23,
   },
@@ -356,17 +353,17 @@ const styles = StyleSheet.create({
     width: '48.5%',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#6D28D9',
+    borderColor: '#111827',
     backgroundColor: '#FFFFFF',
     padding: 10,
     gap: 2,
   },
   specKey: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 12,
   },
   specValue: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 18,
     fontWeight: '600',
   },
@@ -376,8 +373,8 @@ const styles = StyleSheet.create({
   bidItem: {
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E6DCF7',
-    backgroundColor: '#F5F0FF',
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F5F5F4',
     padding: 10,
     marginBottom: 8,
     flexDirection: 'row',
@@ -386,38 +383,38 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   bidder: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 14,
     fontWeight: '600',
   },
   bidDate: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 11,
   },
   bidAmount: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 15,
     fontWeight: '600',
   },
   emptyText: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 13,
   },
   escrowBar: {
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#6D28D9',
+    borderColor: '#111827',
     backgroundColor: '#FFFFFF',
     padding: 12,
     gap: 2,
   },
   escrowTitle: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 16,
     fontWeight: '600',
   },
   escrowText: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 13,
     lineHeight: 18,
   },

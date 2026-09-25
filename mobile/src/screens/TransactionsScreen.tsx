@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   tabsRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#6D28D9',
+    borderBottomColor: '#111827',
     marginBottom: 6,
   },
   tabButton: {
@@ -87,24 +87,24 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   tabText: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 18,
     fontWeight: '600',
   },
   tabTextActive: {
-    color: '#6D28D9',
+    color: '#111827',
   },
   tabUnderline: {
     width: '70%',
     height: 3,
     borderRadius: 999,
     marginTop: 8,
-    backgroundColor: '#6D28D9',
+    backgroundColor: '#111827',
   },
   bidCard: {
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#6D28D9',
+    borderColor: '#111827',
     backgroundColor: '#FFFFFF',
     padding: 12,
     gap: 10,
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     height: 92,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E6DCF7',
+    borderColor: '#E5E7EB',
   },
   cardMain: {
     flex: 1,
@@ -143,11 +143,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   statusPillOk: {
-    borderColor: '#E6DCF7',
+    borderColor: '#E5E7EB',
     backgroundColor: '#D1FAE5',
   },
   statusPillWarn: {
-    borderColor: '#E6DCF7',
+    borderColor: '#E5E7EB',
     backgroundColor: '#FEE2E2',
   },
   statusText: {
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     color: '#DC2626',
   },
   countdown: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 12,
   },
   pricesRow: {
@@ -179,21 +179,21 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   priceLabel: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 11,
     textTransform: 'uppercase',
   },
   priceValue: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 15,
     fontWeight: '600',
   },
   myBid: {
-    color: '#6D28D9',
+    color: '#111827',
   },
   emptyText: {
     textAlign: 'center',
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 13,
     marginTop: 10,
   },

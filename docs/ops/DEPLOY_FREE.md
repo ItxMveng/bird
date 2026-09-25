@@ -33,3 +33,21 @@ utilise le plan Spark de Firebase.
 
 - Le webhook de paiement (`paymentWebhook`) n'est pas exposé par la passerelle : pas de recharge réelle Mobile Money tant qu'un fournisseur n'est pas branché.
 - La recharge de démonstration crédite des fonds fictifs : à désactiver (`DEMO_MODE` absent) avant tout usage avec de l'argent réel.
+
+
+## Paiements réels (Flutterwave — Mobile Money et carte, XAF)
+
+La recharge du portefeuille passe par une page de paiement Flutterwave ; le solde n'est crédité que par le webhook,
+après une re-vérification de la transaction auprès de Flutterwave (idempotent par référence de paiement).
+
+Variables Vercel de l'API :
+
+| Variable | Valeur |
+|---|---|
+| `FLW_SECRET_KEY` | clé secrète Flutterwave (Settings → API) |
+| `FLW_WEBHOOK_HASH` | « Secret hash » saisi dans Settings → Webhooks |
+| `APP_URL` | `https://bird-af69c.web.app` (adresse de retour après paiement) |
+| `DEMO_MODE` | **à supprimer** en production : sinon n'importe quel utilisateur pourrait se créditer des fonds fictifs |
+
+Webhook à déclarer dans Flutterwave : `https://<api>/flutterwave-webhook` (événement « charge.completed »).
+Tant que `FLW_SECRET_KEY` et `FLW_WEBHOOK_HASH` ne sont pas définies, la recharge affiche « Le paiement en ligne n'est pas encore activé ».

@@ -123,13 +123,13 @@ const styles = StyleSheet.create({
   panel: {
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#6D28D9',
+    borderColor: '#111827',
     backgroundColor: '#FFFFFF',
     padding: 14,
     gap: 12,
   },
   sectionLabel: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 16,
     textTransform: 'uppercase',
     fontWeight: '600',
@@ -142,17 +142,17 @@ const styles = StyleSheet.create({
   chip: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#E6DCF7',
-    backgroundColor: '#F5F0FF',
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F5F5F4',
     paddingHorizontal: 12,
     paddingVertical: 9,
   },
   chipActive: {
-    backgroundColor: '#6D28D9',
-    borderColor: '#6D28D9',
+    backgroundColor: '#111827',
+    borderColor: '#111827',
   },
   chipText: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -165,8 +165,8 @@ const styles = StyleSheet.create({
   cityItem: {
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E6DCF7',
-    backgroundColor: '#F5F0FF',
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F5F5F4',
     minHeight: 52,
     paddingHorizontal: 14,
     alignItems: 'center',
@@ -174,11 +174,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   cityItemActive: {
-    borderColor: '#6D28D9',
-    backgroundColor: '#6D28D9',
+    borderColor: '#111827',
+    backgroundColor: '#111827',
   },
   cityText: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 18,
     fontWeight: '600',
   },
@@ -190,11 +190,11 @@ const styles = StyleSheet.create({
     height: 17,
     borderRadius: 8.5,
     borderWidth: 2,
-    borderColor: '#E6DCF7',
+    borderColor: '#E5E7EB',
   },
   cityRadioActive: {
-    borderColor: '#6D28D9',
-    backgroundColor: '#6D28D9',
+    borderColor: '#111827',
+    backgroundColor: '#111827',
   },
   priceRow: {
     flexDirection: 'row',
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   fieldLabel: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 12,
   },
   fakeSliderTrack: {
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     right: 70,
     height: 8,
     borderRadius: 999,
-    backgroundColor: '#6D28D9',
+    backgroundColor: '#111827',
   },
   fakeDotLeft: {
     position: 'absolute',
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     backgroundColor: '#dbeafe',
     borderWidth: 2,
-    borderColor: '#6D28D9',
+    borderColor: '#111827',
   },
   fakeDotRight: {
     position: 'absolute',
@@ -241,24 +241,24 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     backgroundColor: '#dbeafe',
     borderWidth: 2,
-    borderColor: '#6D28D9',
+    borderColor: '#111827',
   },
   conditionBtn: {
     minWidth: 142,
     flex: 1,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E6DCF7',
-    backgroundColor: '#F5F0FF',
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F5F5F4',
     alignItems: 'center',
     paddingVertical: 13,
   },
   conditionBtnActive: {
-    borderColor: '#6D28D9',
-    backgroundColor: '#6D28D9',
+    borderColor: '#111827',
+    backgroundColor: '#111827',
   },
   conditionText: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
   resultCard: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E6DCF7',
+    borderColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
     overflow: 'hidden',
   },
@@ -286,11 +286,11 @@ const styles = StyleSheet.create({
   },
   imageOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#6D28D91A',
+    backgroundColor: '#1118271A',
   },
   resultTime: {
     alignSelf: 'flex-start',
-    color: '#1F1A3D',
+    color: '#0F172A',
     backgroundColor: '#FEE2E2',
     borderRadius: 999,
     paddingHorizontal: 10,
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   resultCity: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 12,
   },
   resultPrice: {
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   emptyText: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 12,
     textAlign: 'center',
   },

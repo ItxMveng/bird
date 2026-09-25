@@ -42,14 +42,14 @@ const styles = StyleSheet.create({
   item: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E6DCF7',
-    backgroundColor: '#6D28D91A',
+    borderColor: '#E5E7EB',
+    backgroundColor: '#1118271A',
     padding: 14,
     gap: 8,
   },
   itemRead: {
     opacity: 0.72,
-    borderColor: '#E6DCF7',
+    borderColor: '#E5E7EB',
   },
   itemTop: {
     flexDirection: 'row',

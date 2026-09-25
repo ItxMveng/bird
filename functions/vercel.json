@@ -3,6 +3,7 @@
   "outputDirectory": "public",
   "rewrites": [
     { "source": "/cron", "destination": "/api/cron" },
+    { "source": "/flutterwave-webhook", "destination": "/api/flutterwave" },
     { "source": "/:fn", "destination": "/api/call?fn=:fn" }
   ]
 }

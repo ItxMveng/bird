@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { Linking, Platform } from 'react-native';
 import {
   addDoc,
   collection,
@@ -437,13 +438,21 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           throw new Error('Montant de recharge invalide.');
         }
         const rounded = Math.round(amount);
-        setWallet((prev) => ({ ...prev, balance: prev.balance + rounded }));
 
-        if (!USE_MOCK && user?.uid) {
-          await api.topUpWallet({ amount: rounded, idempotencyKey: `topup-${user.uid}-${Date.now()}` });
+        if (USE_MOCK) {
+          setWallet((prev) => ({ ...prev, balance: prev.balance + rounded }));
+          await pushNotification('Wallet rechargé', `${rounded.toLocaleString()} XAF ont été ajoutés.`);
+          return;
         }
 
-        await pushNotification('Wallet rechargé', `${rounded.toLocaleString()} XAF ont été ajoutés.`);
+        // Production : le solde n'est crédité que par le webhook du prestataire de paiement, après vérification.
+        const response = await api.createPayment({ amount: rounded });
+        const link = response.result.link;
+        if (Platform.OS === 'web') {
+          window.location.href = link;
+        } else {
+          await Linking.openURL(link);
+        }
       },
       addMessageLocal: async (threadId, senderId, text) => {
         const messageText = text.trim();

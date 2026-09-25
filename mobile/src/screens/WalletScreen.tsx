@@ -4,12 +4,9 @@ import { useAppData } from '../context/AppDataContext';
 import { BirdButton, BirdCard, BirdInput, BirdScreen, palette } from '../components/ui-kit';
 import { formatXaf } from '../utils/format';
 
-type PaymentProvider = 'momo' | 'orange';
-
 export function WalletScreen({ onBack }: { onBack: () => void }) {
   const { wallet, transactions, topUpWalletLocal } = useAppData();
   const [amount, setAmount] = useState('10000');
-  const [provider, setProvider] = useState<PaymentProvider>('momo');
   const [feedback, setFeedback] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -47,7 +44,7 @@ export function WalletScreen({ onBack }: { onBack: () => void }) {
     setFeedback(null);
     try {
       await topUpWalletLocal(numericAmount);
-      setFeedback('Fonds de démonstration ajoutés : aucun paiement réel effectué.');
+      setFeedback('Redirection vers le paiement sécurisé…');
     } catch (error) {
       setFeedback((error as Error).message);
     } finally {
@@ -56,7 +53,7 @@ export function WalletScreen({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <BirdScreen title="Mon Portefeuille" subtitle="Solde disponible, escrow et activites." onBack={onBack}>
+    <BirdScreen title="Portefeuille" subtitle="Solde disponible et fonds bloqués en séquestre" onBack={onBack}>
       <BirdCard style={styles.balanceCard}>
         <Text style={styles.balanceLabel}>Solde disponible</Text>
         <Text style={styles.balanceValue}>{formatXaf(wallet.balance)}</Text>
@@ -65,38 +62,32 @@ export function WalletScreen({ onBack }: { onBack: () => void }) {
 
         <View style={styles.balanceStats}>
           <View style={styles.balanceStat}>
-            <Text style={styles.balanceStatLabel}>Solde bloque (Escrow)</Text>
+            <Text style={styles.balanceStatLabel}>Bloqué en séquestre</Text>
             <Text style={styles.balanceStatValue}>{formatXaf(wallet.blocked)}</Text>
           </View>
           <View style={styles.balanceStat}>
-            <Text style={styles.balanceStatLabel}>Encheres actives</Text>
+            <Text style={styles.balanceStatLabel}>Achats en cours</Text>
             <Text style={styles.balanceStatValue}>{transactions.filter((tx) => tx.status === 'blocked').length}</Text>
           </View>
         </View>
       </BirdCard>
 
       <BirdCard>
-        <Text style={styles.blockTitle}>Recharger (fonds de démonstration)</Text>
+        <Text style={styles.blockTitle}>Recharger mon portefeuille</Text>
         <View style={styles.providerRow}>
-          <Pressable style={[styles.providerBtn, provider === 'momo' ? styles.providerBtnActive : undefined]} onPress={() => setProvider('momo')}>
-            <Text style={[styles.providerText, provider === 'momo' ? styles.providerTextActive : undefined]}>MobileMoney</Text>
-          </Pressable>
-          <Pressable style={[styles.providerBtn, provider === 'orange' ? styles.providerBtnActive : undefined]} onPress={() => setProvider('orange')}>
-            <Text style={[styles.providerText, provider === 'orange' ? styles.providerTextActive : undefined]}>OrangeMoney</Text>
-          </Pressable>
+          {[5000, 10000, 25000, 50000].map((v) => (
+            <Pressable key={v} style={[styles.providerBtn, Number(amount) === v ? styles.providerBtnActive : undefined]} onPress={() => setAmount(String(v))}>
+              <Text style={[styles.providerText, Number(amount) === v ? styles.providerTextActive : undefined]}>{v.toLocaleString('fr-FR')}</Text>
+            </Pressable>
+          ))}
         </View>
-
-        <BirdInput
-          label="Montant (XAF)"
-          keyboardType="numeric"
-          value={amount}
-          onChangeText={setAmount}
-        />
-        <BirdButton label={loading ? 'Traitement...' : 'Recharger'} onPress={handleTopUp} disabled={loading} loading={loading} />
+        <BirdInput label="Montant (XAF)" keyboardType="numeric" value={amount} onChangeText={setAmount} />
+        <BirdButton label="Payer par Mobile Money ou carte" onPress={handleTopUp} disabled={loading} loading={loading} />
+        <Text style={styles.securityNote}>Paiement sécurisé par Flutterwave (MTN Mobile Money, Orange Money, carte). Votre solde est crédité dès la confirmation du paiement.</Text>
       </BirdCard>
 
       <View style={styles.sectionRow}>
-        <Text style={styles.sectionTitle}>Activites recentes</Text>
+        <Text style={styles.sectionTitle}>Activité récente</Text>
       </View>
       <View style={styles.activitiesColumn}>
         {activities.map((item) => (
@@ -120,17 +111,17 @@ export function WalletScreen({ onBack }: { onBack: () => void }) {
 
 const styles = StyleSheet.create({
   balanceCard: {
-    borderColor: '#E6DCF7',
+    borderColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
     gap: 10,
   },
   balanceLabel: {
-    color: '#5B5680',
+    color: '#64748B',
     fontSize: 13,
     fontWeight: '600',
   },
   balanceValue: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 34,
     fontWeight: '600',
   },
@@ -147,11 +138,11 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   balanceStatLabel: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 11,
   },
   balanceStatValue: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 22,
     fontWeight: '600',
   },
@@ -169,17 +160,17 @@ const styles = StyleSheet.create({
     minHeight: 40,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E6DCF7',
-    backgroundColor: '#F5F0FF',
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F5F5F4',
     alignItems: 'center',
     justifyContent: 'center',
   },
   providerBtnActive: {
-    borderColor: '#6D28D9',
-    backgroundColor: '#6D28D9',
+    borderColor: '#111827',
+    backgroundColor: '#111827',
   },
   providerText: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -202,7 +193,7 @@ const styles = StyleSheet.create({
   activityCard: {
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#6D28D9',
+    borderColor: '#111827',
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -215,12 +206,12 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   activityTitle: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 16,
     fontWeight: '600',
   },
   activityMeta: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 12,
   },
   activityRight: {
@@ -235,20 +226,21 @@ const styles = StyleSheet.create({
     color: '#047857',
   },
   amountOut: {
-    color: '#1F1A3D',
+    color: '#0F172A',
   },
   statusPill: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#E6DCF7',
-    backgroundColor: '#F5F0FF',
-    color: '#6D28D9',
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F5F5F4',
+    color: '#111827',
     fontSize: 11,
     paddingHorizontal: 8,
     paddingVertical: 3,
     textTransform: 'uppercase',
     fontWeight: '600',
   },
+  securityNote: { color: palette.textDim, fontSize: 12.5, lineHeight: 18 },
   feedback: {
     color: palette.textMuted,
     fontSize: 12,

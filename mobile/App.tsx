@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Feather } from '@expo/vector-icons';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { AppDataProvider } from './src/context/AppDataContext';
 import { InteractiveSplash } from './src/components/InteractiveSplash';
@@ -43,7 +43,7 @@ const DETAIL_ROUTES: Route[] = ['auction', 'transactionDetail', 'dispute', 'conv
 function AppInner() {
   const { user, step, logout } = useAuth();
   const [showSplash, setShowSplash] = useState(true);
-  const [route, setRoute] = useState<Route>('home');
+  const [route, setRoute] = useState<Route>(Platform.OS === 'web' && typeof window !== 'undefined' && window.location.search.includes('paiement=retour') ? 'wallet' : 'home');
   const [selectedAuction, setSelectedAuction] = useState<Auction | null>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [selectedThread, setSelectedThread] = useState<MessageThread | null>(null);
@@ -58,12 +58,12 @@ function AppInner() {
   };
   const showTabs = !DETAIL_ROUTES.includes(route);
 
-  const tabs: Array<{ label: string; glyph: string; route: Route | 'more' }> = [
-    { label: 'Accueil', glyph: '⌂', route: 'home' },
-    { label: 'Explorer', glyph: '⌕', route: 'search' },
-    { label: 'Vendre', glyph: '+', route: 'create' },
-    { label: 'Mes mises', glyph: '◎', route: 'transactions' },
-    { label: 'Plus', glyph: '≡', route: 'more' },
+  const tabs: Array<{ label: string; icon: React.ComponentProps<typeof Feather>['name']; route: Route | 'more' }> = [
+    { label: 'Accueil', icon: 'home', route: 'home' },
+    { label: 'Explorer', icon: 'search', route: 'search' },
+    { label: 'Vendre', icon: 'plus-circle', route: 'create' },
+    { label: 'Mes mises', icon: 'shopping-bag', route: 'transactions' },
+    { label: 'Compte', icon: 'user', route: 'more' },
   ];
 
   const moreItems: Array<{ label: string; route: Route }> = [
@@ -142,7 +142,6 @@ function AppInner() {
           <View style={styles.tabBar}>
             {tabs.map((t) => {
               const active = t.route === route;
-              const isFab = t.route === 'create';
               return (
                 <Pressable
                   key={t.label}
@@ -152,13 +151,7 @@ function AppInner() {
                   accessibilityLabel={t.label}
                   accessibilityState={{ selected: active }}
                 >
-                  {isFab ? (
-                    <LinearGradient colors={theme.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.fab}>
-                      <Text style={styles.fabGlyph}>+</Text>
-                    </LinearGradient>
-                  ) : (
-                    <Text style={[styles.glyph, active && styles.glyphActive]}>{t.glyph}</Text>
-                  )}
+                  <Feather name={t.icon} size={22} color={active ? theme.ink : theme.dim} />
                   <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{t.label}</Text>
                 </Pressable>
               );
@@ -200,33 +193,24 @@ export default function App() {
 
 const styles = StyleSheet.create({
   appRoot: { flex: 1, backgroundColor: theme.bg, ...(Platform.OS === 'web' ? { maxWidth: 560, width: '100%', alignSelf: 'center' } : null) },
-  tabBarWrap: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 12, paddingBottom: Platform.OS === 'ios' ? 20 : 10 },
+  tabBarWrap: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   tabBar: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    backgroundColor: '#fff',
-    borderRadius: 28,
-    paddingHorizontal: 6,
+    backgroundColor: theme.surface,
+    borderTopWidth: 1,
+    borderTopColor: theme.line,
     paddingTop: 8,
-    paddingBottom: 8,
-    borderWidth: 1,
-    borderColor: theme.line,
-    ...theme.shadow,
-    shadowOpacity: 0.22,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 10,
   },
-  tab: { flex: 1, alignItems: 'center', gap: 2, minHeight: 46, justifyContent: 'flex-end' },
-  glyph: { fontSize: 24, color: theme.dim, lineHeight: 26 },
-  glyphActive: { color: theme.primary },
-  tabLabel: { fontSize: 10.5, color: theme.dim, fontWeight: '700' },
-  tabLabelActive: { color: theme.primary },
-  fab: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', marginTop: -30, borderWidth: 4, borderColor: '#fff' },
-  fabGlyph: { color: '#fff', fontSize: 30, fontWeight: '700', lineHeight: 32 },
-  sheetBackdrop: { flex: 1, backgroundColor: '#1F1A3D88', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, paddingBottom: 30, gap: 4, maxWidth: 560, width: '100%', alignSelf: 'center' },
+  tab: { flex: 1, alignItems: 'center', gap: 3, minHeight: 44, justifyContent: 'center' },
+  tabLabel: { fontSize: 11, color: theme.dim, fontWeight: '500' },
+  tabLabelActive: { color: theme.ink, fontWeight: '700' },
+  sheetBackdrop: { flex: 1, backgroundColor: '#0F172A66', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 18, paddingBottom: 30, gap: 4, maxWidth: 560, width: '100%', alignSelf: 'center' },
   sheetHandle: { alignSelf: 'center', width: 44, height: 5, borderRadius: 3, backgroundColor: theme.line, marginBottom: 10 },
-  sheetTitle: { color: theme.ink, fontWeight: '900', fontSize: 18, marginBottom: 6 },
+  sheetTitle: { color: theme.ink, fontWeight: '700', fontSize: 17, marginBottom: 6 },
   sheetItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: theme.line },
-  sheetItemText: { color: theme.ink, fontWeight: '700', fontSize: 15.5 },
+  sheetItemText: { color: theme.ink, fontWeight: '500', fontSize: 15.5 },
   sheetChevron: { color: theme.dim, fontSize: 22 },
   logout: { borderBottomWidth: 0, marginTop: 4 },
 });

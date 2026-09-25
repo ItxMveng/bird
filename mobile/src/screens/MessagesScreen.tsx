@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   tabsRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#6D28D9',
+    borderBottomColor: '#111827',
     marginBottom: 4,
   },
   tabBtn: {
@@ -89,17 +89,17 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   tabText: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 14,
     fontWeight: '600',
   },
   tabTextActive: {
-    color: '#6D28D9',
+    color: '#111827',
   },
   tabUnderline: {
     height: 3,
     width: '55%',
-    backgroundColor: '#6D28D9',
+    backgroundColor: '#111827',
     borderRadius: 999,
     marginTop: 9,
   },
@@ -114,15 +114,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#6D28D9',
-    backgroundColor: '#6D28D91A',
+    borderBottomColor: '#111827',
+    backgroundColor: '#1118271A',
   },
   productThumb: {
     width: 72,
     height: 72,
     borderRadius: 13,
     borderWidth: 1,
-    borderColor: '#E6DCF7',
+    borderColor: '#E5E7EB',
   },
   threadContent: {
     flex: 1,
@@ -140,16 +140,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   threadTime: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 11,
     fontWeight: '600',
   },
   lastMessage: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 13,
   },
   metaText: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 11,
   },
   favoriteDot: {
@@ -157,16 +157,16 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 1,
-    borderColor: '#E6DCF7',
+    borderColor: '#E5E7EB',
     alignItems: 'center',
     justifyContent: 'center',
   },
   favoriteDotActive: {
-    backgroundColor: '#6D28D9',
-    borderColor: '#6D28D9',
+    backgroundColor: '#111827',
+    borderColor: '#111827',
   },
   favoriteDotText: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 20,
     lineHeight: 20,
   },

@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statTitle: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -145,12 +145,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#D1FAE5',
   },
   statValue: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 36,
     fontWeight: '600',
   },
   statMeta: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 13,
   },
   sectionTitle: {
@@ -170,11 +170,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   disputeMeta: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 12,
   },
   disputeReason: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 13,
   },
   actionsRow: {
@@ -190,21 +190,21 @@ const styles = StyleSheet.create({
   },
   refundBtn: {
     borderWidth: 1,
-    borderColor: '#E6DCF7',
+    borderColor: '#E5E7EB',
     backgroundColor: '#FEE2E2',
   },
   payBtn: {
     borderWidth: 1,
-    borderColor: '#6D28D9',
-    backgroundColor: '#6D28D9',
+    borderColor: '#111827',
+    backgroundColor: '#111827',
   },
   actionText: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 13,
     fontWeight: '600',
   },
   feedback: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 12,
   },
 });

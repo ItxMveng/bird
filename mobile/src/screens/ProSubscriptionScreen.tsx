@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   price: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 22,
     fontWeight: '600',
   },

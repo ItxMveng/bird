@@ -11,6 +11,7 @@ const CALLABLES = [
   'openDispute',
   'resolveDispute',
   'topUpWallet',
+  'createPayment',
   'getTransactionSecretCode',
 ] as const;
 

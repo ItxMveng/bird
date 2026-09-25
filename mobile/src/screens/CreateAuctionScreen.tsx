@@ -260,13 +260,13 @@ const styles = StyleSheet.create({
   progressTrack: {
     height: 8,
     borderRadius: 999,
-    backgroundColor: '#E6DCF7',
+    backgroundColor: '#E5E7EB',
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     borderRadius: 999,
-    backgroundColor: '#6D28D9',
+    backgroundColor: '#111827',
   },
   blockTitle: {
     color: palette.text,
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   fieldLabel: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -288,17 +288,17 @@ const styles = StyleSheet.create({
   pill: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#E6DCF7',
-    backgroundColor: '#F5F0FF',
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F5F5F4',
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
   pillActive: {
-    borderColor: '#6D28D9',
-    backgroundColor: '#6D28D9',
+    borderColor: '#111827',
+    backgroundColor: '#111827',
   },
   pillText: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#E6DCF7',
+    borderColor: '#E5E7EB',
   },
   photoImage: {
     width: '100%',
@@ -334,22 +334,22 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#6D28D91A',
+    backgroundColor: '#1118271A',
   },
   removePhotoText: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 11,
     fontWeight: '600',
   },
   pricePreview: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 13,
     fontWeight: '600',
   },
   boostCard: {
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#6D28D9',
+    borderColor: '#111827',
     backgroundColor: '#FFFFFF',
     padding: 12,
     flexDirection: 'row',
@@ -362,12 +362,12 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   boostTitle: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 16,
     fontWeight: '600',
   },
   boostText: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 13,
     lineHeight: 18,
   },
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     padding: 3,
   },
   toggleWrapActive: {
-    backgroundColor: '#6D28D9',
+    backgroundColor: '#111827',
   },
   toggleDot: {
     width: 24,
@@ -396,15 +396,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#6D28D9',
+    borderBottomColor: '#111827',
     paddingBottom: 8,
   },
   summaryLabel: {
-    color: '#6D28D9',
+    color: '#111827',
     fontSize: 13,
   },
   summaryValue: {
-    color: '#1F1A3D',
+    color: '#0F172A',
     fontSize: 13,
     fontWeight: '600',
     textAlign: 'right',

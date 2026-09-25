@@ -36,13 +36,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getTransactionSecretCode = exports.topUpWallet = exports.paymentWebhook = exports.resolveDispute = exports.openDispute = exports.confirmSecretCode = exports.markDelivered = exports.closeExpiredAuctions = exports.placeBid = exports.publishAuction = void 0;
+exports.createPayment = exports.getTransactionSecretCode = exports.topUpWallet = exports.paymentWebhook = exports.resolveDispute = exports.openDispute = exports.confirmSecretCode = exports.markDelivered = exports.closeExpiredAuctions = exports.placeBid = exports.publishAuction = void 0;
 const node_crypto_1 = __importDefault(require("node:crypto"));
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
 const scheduler_1 = require("firebase-functions/v2/scheduler");
 const options_1 = require("firebase-functions/v2/options");
 const domain_1 = require("./domain");
+const payments_1 = require("./payments");
 const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
 admin.initializeApp(serviceAccount ? { credential: admin.credential.cert(JSON.parse(serviceAccount)) } : undefined);
 const db = admin.firestore();
@@ -646,4 +647,11 @@ exports.getTransactionSecretCode = (0, https_1.onCall)(async (request) => {
         secretCode: secretData.secretCode,
         expiresAt: secretData.expiresAt.toDate().toISOString(),
     };
+});
+exports.createPayment = (0, https_1.onCall)(async (request) => {
+    const uid = await ensureAuthenticated(request.auth?.uid);
+    const { amount } = request.data;
+    const user = await admin.auth().getUser(uid);
+    const profile = await db.collection('profiles').doc(uid).get();
+    return (0, payments_1.createPaymentLink)({ uid, email: user.email ?? '', name: String(profile.data()?.name ?? ''), amount });
 });

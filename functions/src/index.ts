@@ -13,6 +13,7 @@ import {
   computeCommission,
   DomainError,
 } from './domain';
+import { createPaymentLink } from './payments';
 
 const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
 admin.initializeApp(serviceAccount ? { credential: admin.credential.cert(JSON.parse(serviceAccount)) } : undefined);
@@ -716,4 +717,12 @@ export const getTransactionSecretCode = onCall(async (request) => {
     secretCode: secretData.secretCode,
     expiresAt: secretData.expiresAt.toDate().toISOString(),
   };
+});
+
+export const createPayment = onCall(async (request) => {
+  const uid = await ensureAuthenticated(request.auth?.uid);
+  const { amount } = request.data as { amount: unknown };
+  const user = await admin.auth().getUser(uid);
+  const profile = await db.collection('profiles').doc(uid).get();
+  return createPaymentLink({ uid, email: user.email ?? '', name: String(profile.data()?.name ?? ''), amount });
 });

@@ -45,6 +45,7 @@ const CALLABLES = [
     'openDispute',
     'resolveDispute',
     'topUpWallet',
+    'createPayment',
     'getTransactionSecretCode',
 ];
 const DEFAULT_ORIGINS = ['https://bird-af69c.web.app', 'https://bird-af69c.firebaseapp.com', 'http://localhost:8081', 'http://localhost:19006'];

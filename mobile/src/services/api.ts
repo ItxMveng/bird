@@ -65,6 +65,10 @@ export const api = {
     return post<{ result: { ok: boolean; duplicate?: boolean } }>('topUpWallet', payload);
   },
 
+  async createPayment(payload: { amount: number }) {
+    return post<{ result: { link: string; reference: string } }>('createPayment', payload);
+  },
+
   async getTransactionSecretCode(payload: { transactionId: string }) {
     return post<{ result: { ok: boolean; secretCode: string; expiresAt: string } }>('getTransactionSecretCode', payload);
   },

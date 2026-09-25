@@ -78,15 +78,15 @@ const styles = StyleSheet.create({
   },
   bubbleMine: {
     alignSelf: 'flex-end',
-    backgroundColor: '#6D28D91A',
+    backgroundColor: '#1118271A',
     borderWidth: 1,
-    borderColor: '#E6DCF7',
+    borderColor: '#E5E7EB',
   },
   bubbleOther: {
     alignSelf: 'flex-start',
-    backgroundColor: '#6D28D91A',
+    backgroundColor: '#1118271A',
     borderWidth: 1,
-    borderColor: '#E6DCF7',
+    borderColor: '#E5E7EB',
   },
   sender: {
     color: palette.tealSoft,
