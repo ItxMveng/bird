@@ -62,6 +62,20 @@ function applyCors(req, res) {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.setHeader('Access-Control-Max-Age', '600');
 }
+// Balayage opportuniste : le cron GitHub Actions est bridé (quelques passages par jour) ; toute activité
+// sur l'API clôture aussi les enchères échues, au plus une fois par minute et par instance.
+let lastSweep = 0;
+async function sweepExpired() {
+    if (Date.now() - lastSweep < 60_000)
+        return;
+    lastSweep = Date.now();
+    try {
+        await fns.closeExpiredAuctions.run({});
+    }
+    catch (e) {
+        console.error(JSON.stringify({ event: 'sweep_error', message: e.message }));
+    }
+}
 async function handler(req, res) {
     applyCors(req, res);
     if (req.method === 'OPTIONS')
@@ -84,6 +98,7 @@ async function handler(req, res) {
             return res.status(401).json({ error: { message: 'Session expirée, reconnectez-vous', status: 'UNAUTHENTICATED' } });
         }
     }
+    await sweepExpired();
     try {
         const fn = fns[name];
         const result = await fn.run({ data: req.body?.data ?? {}, auth, rawRequest: req, acceptsStreaming: false });

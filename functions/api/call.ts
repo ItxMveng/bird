@@ -32,6 +32,19 @@ function applyCors(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Max-Age', '600');
 }
 
+// Balayage opportuniste : le cron GitHub Actions est bridé (quelques passages par jour) ; toute activité
+// sur l'API clôture aussi les enchères échues, au plus une fois par minute et par instance.
+let lastSweep = 0;
+async function sweepExpired() {
+  if (Date.now() - lastSweep < 60_000) return;
+  lastSweep = Date.now();
+  try {
+    await (fns.closeExpiredAuctions as unknown as { run: (r: unknown) => Promise<unknown> }).run({});
+  } catch (e) {
+    console.error(JSON.stringify({ event: 'sweep_error', message: (e as Error).message }));
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   applyCors(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
@@ -51,6 +64,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ error: { message: 'Session expirée, reconnectez-vous', status: 'UNAUTHENTICATED' } });
     }
   }
+
+  await sweepExpired();
 
   try {
     const fn = (fns as unknown as Record<string, { run: (r: unknown) => Promise<unknown> }>)[name];
