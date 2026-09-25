@@ -160,7 +160,7 @@ export function AuctionDetailScreen({ auction, onBack }: { auction: Auction; onB
             {liveBids.map((bid) => (
               <View key={bid.id} style={styles.bidItem}>
                 <View>
-                  <Text style={styles.bidder}>{bid.bidderName ?? bid.bidderId}</Text>
+                  <Text style={styles.bidder}>{bid.bidderName ?? profiles[bid.bidderId]?.name ?? 'Enchérisseur'}</Text>
                   <Text style={styles.bidDate}>{formatDateTime(bid.createdAt)}</Text>
                 </View>
                 <Text style={styles.bidAmount}>{formatXaf(bid.amount)}</Text>

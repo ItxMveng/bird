@@ -17,6 +17,13 @@ let auth = await idt('signInWithPassword', { email: EMAIL, password: PASSWORD })
 if (!auth.idToken) auth = await idt('signUp', { email: EMAIL, password: PASSWORD });
 if (!auth.idToken) throw new Error('Connexion du compte vendeur impossible : ' + JSON.stringify(auth));
 
+// Profil public du vendeur de démonstration (nom affiché sur les annonces)
+await fetch(`https://firestore.googleapis.com/v1/projects/bird-af69c/databases/(default)/documents/profiles/${auth.localId}?updateMask.fieldPaths=uid&updateMask.fieldPaths=name&updateMask.fieldPaths=city`, {
+  method: 'PATCH',
+  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.idToken}` },
+  body: JSON.stringify({ fields: { uid: { stringValue: auth.localId }, name: { stringValue: 'Bird Démo' }, city: { stringValue: 'Douala' } } }),
+});
+
 const img = (id) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1200&q=80`;
 const ITEMS = [
   { title: 'iPhone 13 Pro 128 Go', description: 'Très bon état, batterie 88 %, vendu avec chargeur.', category: 'phones', startPrice: 250000, city: 'Douala', durationHours: 48, imageUrl: img('photo-1632661674596-df8be070a5c5') },

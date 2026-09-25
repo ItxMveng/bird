@@ -47,7 +47,7 @@ export function WalletScreen({ onBack }: { onBack: () => void }) {
     setFeedback(null);
     try {
       await topUpWalletLocal(numericAmount);
-      setFeedback(`Depot ${provider === 'momo' ? 'Mobile Money' : 'Orange Money'} reussi.`);
+      setFeedback('Fonds de démonstration ajoutés : aucun paiement réel effectué.');
     } catch (error) {
       setFeedback((error as Error).message);
     } finally {
@@ -76,7 +76,7 @@ export function WalletScreen({ onBack }: { onBack: () => void }) {
       </BirdCard>
 
       <BirdCard>
-        <Text style={styles.blockTitle}>Recharger mon compte</Text>
+        <Text style={styles.blockTitle}>Recharger (fonds de démonstration)</Text>
         <View style={styles.providerRow}>
           <Pressable style={[styles.providerBtn, provider === 'momo' ? styles.providerBtnActive : undefined]} onPress={() => setProvider('momo')}>
             <Text style={[styles.providerText, provider === 'momo' ? styles.providerTextActive : undefined]}>MobileMoney</Text>
