@@ -170,20 +170,33 @@ async function releaseFundsToSeller(params) {
 exports.publishAuction = (0, https_1.onCall)(async (request) => {
     try {
         const uid = await ensureAuthenticated(request.auth?.uid);
-        const { title, description, category, startPrice, city, durationHours } = request.data;
+        const { title, description, category, startPrice, city, durationHours, imageUrl } = request.data;
         (0, domain_1.assertAllowedDuration)(Number(durationHours));
+        if (typeof title !== 'string' || title.trim().length < 3 || title.length > 120)
+            throw new https_1.HttpsError('invalid-argument', 'Titre : 3 à 120 caractères');
+        if (typeof description !== 'string' || description.length > 2000)
+            throw new https_1.HttpsError('invalid-argument', 'Description : 2000 caractères maximum');
+        if (!['phones', 'electronics', 'moto', 'appliances'].includes(category))
+            throw new https_1.HttpsError('invalid-argument', 'Catégorie invalide');
+        if (!Number.isInteger(startPrice) || startPrice < 1000 || startPrice > 100_000_000)
+            throw new https_1.HttpsError('invalid-argument', 'Prix de départ : entier entre 1 000 et 100 000 000 XAF');
+        if (typeof city !== 'string' || city.trim().length < 2 || city.length > 60)
+            throw new https_1.HttpsError('invalid-argument', 'Ville invalide');
+        if (imageUrl !== undefined && (typeof imageUrl !== 'string' || imageUrl.length > 600 || !/^https:\/\//i.test(imageUrl)))
+            throw new https_1.HttpsError('invalid-argument', 'Image : lien https requis');
         const now = admin.firestore.Timestamp.now();
         const endAt = admin.firestore.Timestamp.fromMillis(now.toMillis() + durationHours * 3600 * 1000);
         const doc = await db.collection('auctions').add({
             sellerId: uid,
-            title,
+            title: title.trim(),
             description,
             category,
             startPrice,
             currentPrice: startPrice,
             status: 'active',
             endAt,
-            city,
+            city: city.trim(),
+            ...(imageUrl ? { imageUrl } : {}),
             createdAt: now,
             updatedAt: now,
         });
