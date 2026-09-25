@@ -68,7 +68,7 @@ async function handler(req, res) {
         return res.status(204).end();
     const name = String(req.query.fn ?? '');
     if (name === 'health')
-        return res.status(200).json({ ok: true, service: 'bird-api' });
+        return res.status(200).json({ ok: true, service: 'bird-api', commit: (process.env.VERCEL_GIT_COMMIT_SHA ?? 'local').slice(0, 7) });
     if (!CALLABLES.includes(name))
         return res.status(404).json({ error: { message: 'Fonction inconnue', status: 'NOT_FOUND' } });
     if (req.method !== 'POST')

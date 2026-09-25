@@ -37,7 +37,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(204).end();
 
   const name = String(req.query.fn ?? '');
-  if (name === 'health') return res.status(200).json({ ok: true, service: 'bird-api' });
+  if (name === 'health') return res.status(200).json({ ok: true, service: 'bird-api', commit: (process.env.VERCEL_GIT_COMMIT_SHA ?? 'local').slice(0, 7) });
   if (!(CALLABLES as readonly string[]).includes(name)) return res.status(404).json({ error: { message: 'Fonction inconnue', status: 'NOT_FOUND' } });
   if (req.method !== 'POST') return res.status(405).json({ error: { message: 'POST requis', status: 'METHOD_NOT_ALLOWED' } });
 

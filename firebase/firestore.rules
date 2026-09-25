@@ -55,7 +55,14 @@ service cloud.firestore {
 
     match /auctions/{auctionId} {
       allow read: if true;
-      allow create, update: if false; // backend-only to enforce domain invariants
+      allow create: if false; // backend-only to enforce domain invariants
+      // Le vendeur peut annuler sa propre annonce tant qu'elle n'a reçu aucune mise.
+      allow update: if isAuthenticated()
+        && resource.data.sellerId == request.auth.uid
+        && resource.data.status == 'active'
+        && !('winnerId' in resource.data)
+        && request.resource.data.status == 'cancelled'
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['status', 'updatedAt']);
       allow delete: if false;
     }
 
