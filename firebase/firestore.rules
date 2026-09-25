@@ -25,11 +25,11 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if isOwner(uid);
       allow create: if isOwner(uid)
-        && hasOnlyKeys(request.resource.data, ['uid', 'phone', 'role', 'isPro', 'status', 'createdAt'])
+        && hasOnlyKeys(request.resource.data, ['uid', 'email', 'name', 'city', 'phone', 'role', 'isPro', 'status', 'createdAt', 'updatedAt'])
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.role == 'user'
-        && request.resource.data.status == 'active'
-        && request.resource.data.isPro == false;
+        && (!('status' in request.resource.data) || request.resource.data.status == 'active')
+        && (!('isPro' in request.resource.data) || request.resource.data.isPro == false);
       allow update: if isOwner(uid)
         && !request.resource.data.diff(resource.data).changedKeys().hasAny(['role', 'status', 'isPro']);
       allow delete: if false;
@@ -38,7 +38,8 @@ service cloud.firestore {
     match /profiles/{uid} {
       allow read: if true;
       allow create, update: if isOwner(uid)
-        && request.resource.data.uid == request.auth.uid;
+        && request.resource.data.uid == request.auth.uid
+        && hasOnlyKeys(request.resource.data, ['uid', 'name', 'city', 'photoUrl']);
       allow delete: if false;
     }
 
@@ -78,10 +79,41 @@ service cloud.firestore {
       allow read: if isAuthenticated()
         && (
           isAdmin()
-          || transactionForDispute(resource.data.transactionId).buyerId == request.auth.uid
-          || transactionForDispute(resource.data.transactionId).sellerId == request.auth.uid
+          || request.auth.uid in resource.data.get('participants', [])
         );
       allow create: if false; // backend-only via Cloud Functions
+      allow update, delete: if false;
+    }
+
+    match /threads/{threadId} {
+      allow read: if isAuthenticated() && request.auth.uid in resource.data.participants;
+      allow create: if isAuthenticated() && request.auth.uid in request.resource.data.participants;
+      allow update: if isAuthenticated()
+        && request.auth.uid in resource.data.participants
+        && request.resource.data.participants == resource.data.participants;
+      allow delete: if false;
+    }
+
+    match /messages/{messageId} {
+      allow read: if isAuthenticated() && request.auth.uid in resource.data.participants;
+      allow create: if isAuthenticated()
+        && request.resource.data.senderId == request.auth.uid
+        && request.auth.uid in request.resource.data.participants;
+      allow update, delete: if false;
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['read']);
+      allow delete: if false;
+    }
+
+    match /ratings/{ratingId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
       allow update, delete: if false;
     }
 

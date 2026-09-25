@@ -78,25 +78,26 @@ const toIsoString = (value: unknown, fallback = new Date().toISOString()) => {
 
 export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [auctions, setAuctions] = useState<Auction[]>(mockData.auctions);
-  const [bids, setBids] = useState<Bid[]>(mockData.bids);
+  const [auctions, setAuctions] = useState<Auction[]>(USE_MOCK ? mockData.auctions : []);
+  const [bids, setBids] = useState<Bid[]>(USE_MOCK ? mockData.bids : []);
   const [profiles, setProfiles] = useState<Record<string, PublicProfile>>(
-    Object.fromEntries(mockData.profiles.map((profile) => [profile.uid, profile])),
+    USE_MOCK ? Object.fromEntries(mockData.profiles.map((profile) => [profile.uid, profile])) : {},
   );
-  const [wallet, setWallet] = useState<Wallet>(mockData.wallet);
-  const [transactions, setTransactions] = useState<Transaction[]>(mockData.transactions);
+  const [wallet, setWallet] = useState<Wallet>(USE_MOCK ? mockData.wallet : { balance: 0, blocked: 0, currency: 'XAF' });
+  const [transactions, setTransactions] = useState<Transaction[]>(USE_MOCK ? mockData.transactions : []);
   const [notifications, setNotifications] = useState<AppNotification[]>(
-    mockData.notifications.map((n) => ({ ...n, read: false })),
+    USE_MOCK ? mockData.notifications.map((n) => ({ ...n, read: false })) : [],
   );
-  const [threads, setThreads] = useState<MessageThread[]>(mockData.threads);
-  const [messages, setMessages] = useState<Message[]>(mockData.messages);
-  const [disputes, setDisputes] = useState<Dispute[]>(mockData.disputes);
-  const [ratings, setRatings] = useState<Rating[]>(mockData.ratings);
+  const [threads, setThreads] = useState<MessageThread[]>(USE_MOCK ? mockData.threads : []);
+  const [messages, setMessages] = useState<Message[]>(USE_MOCK ? mockData.messages : []);
+  const [disputes, setDisputes] = useState<Dispute[]>(USE_MOCK ? mockData.disputes : []);
+  const [ratings, setRatings] = useState<Rating[]>(USE_MOCK ? mockData.ratings : []);
 
   useEffect(() => {
     if (!user?.uid || USE_MOCK) return;
 
     const unsubs: Array<() => void> = [];
+    const onError = (name: string) => (error: unknown) => console.warn(`[Bird] écoute « ${name} » refusée`, error);
 
     unsubs.push(
       onSnapshot(
@@ -116,18 +117,22 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             })),
           );
         },
+        onError('enchères'),
       ),
     );
 
     unsubs.push(
       onSnapshot(doc(db, 'wallets', user.uid), (snap) => {
-        if (!snap.exists()) return;
+        if (!snap.exists()) {
+          setWallet({ balance: 0, blocked: 0, currency: 'XAF' });
+          return;
+        }
         setWallet({
           balance: snap.get('balance') ?? 0,
           blocked: snap.get('blocked') ?? 0,
           currency: 'XAF',
         });
-      }),
+      }, onError('données')),
     );
 
     unsubs.push(
@@ -142,7 +147,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             sellerId: d.get('sellerId'),
           })),
         );
-      }),
+      }, onError('données')),
     );
 
     unsubs.push(
@@ -157,7 +162,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             updatedAt: toIsoString(d.get('updatedAt')),
           })),
         );
-      }),
+      }, onError('données')),
     );
 
     unsubs.push(
@@ -172,11 +177,11 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         }));
         nextMessages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
         setMessages(nextMessages);
-      }),
+      }, onError('données')),
     );
 
     unsubs.push(
-      onSnapshot(collection(db, 'disputes'), (snap) => {
+      onSnapshot(user.role === 'admin' ? collection(db, 'disputes') : query(collection(db, 'disputes'), where('participants', 'array-contains', user.uid)), (snap) => {
         setDisputes(
           snap.docs.map((d) => ({
             id: d.id,
@@ -185,7 +190,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             status: d.get('status'),
           })),
         );
-      }),
+      }, onError('données')),
     );
 
     unsubs.push(
@@ -200,11 +205,11 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             createdAt: toIsoString(d.get('createdAt')),
           })),
         );
-      }),
+      }, onError('données')),
     );
 
     unsubs.push(
-      onSnapshot(collection(db, 'users'), (snap) => {
+      onSnapshot(collection(db, 'profiles'), (snap) => {
         setProfiles(
           Object.fromEntries(
             snap.docs.map((d) => [
@@ -220,7 +225,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             ]),
           ),
         );
-      }),
+      }, onError('données')),
     );
 
     unsubs.push(
@@ -234,7 +239,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         }));
         nextNotifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         setNotifications(nextNotifications);
-      }),
+      }, onError('données')),
     );
 
     return () => {

@@ -400,6 +400,7 @@ exports.openDispute = (0, https_1.onCall)(async (request) => {
             txRef.update({ status: 'dispute', updatedAt: admin.firestore.FieldValue.serverTimestamp() }),
             db.collection('disputes').add({
                 transactionId,
+                participants: [txData.buyerId, txData.sellerId],
                 openedBy: txData.buyerId === uid ? 'buyer' : 'seller',
                 reason,
                 status: 'open',

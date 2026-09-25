@@ -412,9 +412,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               name: completed.name ?? null,
               city: completed.city ?? null,
               role: completed.role ?? 'user',
-              isPro: Boolean(completed.isPro),
+              isPro: false,
+              status: 'active',
               updatedAt: serverTimestamp(),
             },
+            { merge: true },
+          );
+          await setDoc(
+            doc(db, 'profiles', completed.uid),
+            { uid: completed.uid, name: completed.name ?? null, city: completed.city ?? null },
             { merge: true },
           );
         }
@@ -448,19 +454,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ]);
 
       if (!USE_MOCK) {
+        // Le statut PRO est réservé au serveur : les règles refusent l'auto-promotion, la mise à jour reste locale.
         await setDoc(
           doc(db, 'users', updated.uid),
-          {
-            uid: updated.uid,
-            email: updated.email ?? null,
-            name: updated.name ?? null,
-            city: updated.city ?? null,
-            role: updated.role ?? 'user',
-            isPro,
-            updatedAt: serverTimestamp(),
-          },
+          { uid: updated.uid, name: updated.name ?? null, city: updated.city ?? null, updatedAt: serverTimestamp() },
           { merge: true },
-        );
+        ).catch(() => undefined);
       }
 
       setFeedback({
