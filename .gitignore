@@ -36,3 +36,7 @@ desktop.ini
 mobile/dist/
 mobile/.expo/
 *.log
+
+# Projet natif généré par « expo prebuild » (jamais versionné)
+mobile/android/
+mobile/ios/

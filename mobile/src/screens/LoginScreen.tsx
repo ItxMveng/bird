@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Linking } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { theme } from '../theme';
 
@@ -221,6 +222,11 @@ export function LoginScreen() {
               <Text style={styles.perk}>Fonds bloqués jusqu’à la remise</Text>
               <Text style={styles.perk}>Code secret à la livraison</Text>
               <Text style={styles.perk}>Litiges arbitrés</Text>
+              {Platform.OS === 'web' ? (
+                <Pressable onPress={() => Linking.openURL('/download.html')} accessibilityRole="link">
+                  <Text style={styles.download}>Télécharger l’application Android</Text>
+                </Pressable>
+              ) : null}
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -262,4 +268,5 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.5 },
   perks: { marginTop: 14, gap: 4, alignItems: 'center' },
   perk: { color: '#FFFFFFDD', fontSize: 13, fontWeight: '600' },
+  download: { color: '#fff', fontSize: 13.5, fontWeight: '800', textDecorationLine: 'underline', marginTop: 10 },
 });

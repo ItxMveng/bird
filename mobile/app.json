@@ -1,16 +1,38 @@
 {
   "expo": {
-    "name": "Bird Auction",
+    "name": "Bird",
     "slug": "bird-mobile",
-    "version": "1.0.0",
+    "scheme": "bird",
+    "version": "1.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "backgroundColor": "#FFF7F0",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#DB2777"
+    },
     "assetBundlePatterns": ["**/*"],
     "android": {
-      "package": "com.bird.auction"
+      "package": "com.bird.auction",
+      "versionCode": 2,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#DB2777"
+      },
+      "permissions": ["INTERNET"]
     },
     "ios": {
       "bundleIdentifier": "com.bird.auction"
+    },
+    "web": {
+      "favicon": "./assets/icon.png",
+      "name": "Bird — Enchères avec séquestre",
+      "shortName": "Bird",
+      "themeColor": "#6D28D9",
+      "backgroundColor": "#FFF7F0",
+      "lang": "fr"
     }
   }
 }
